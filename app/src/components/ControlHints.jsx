@@ -4,7 +4,14 @@ import './ControlHints.css';
 /**
  * 控制提示 UI 元件
  */
-export default function ControlHints({ isMobile, gyroscopeEnabled, onToggleGyroscope, onRequestGyroscope, onResetCamera }) {
+export default function ControlHints({ 
+  isMobile, 
+  gyroscopeEnabled, 
+  onToggleGyroscope, 
+  onRequestGyroscope, 
+  onResetCamera,
+  onTogglePresentationMode 
+}) {
   const [isVisible, setIsVisible] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -64,6 +71,16 @@ export default function ControlHints({ isMobile, gyroscopeEnabled, onToggleGyros
         title="重置視角"
       >
         🏠
+      </button>
+
+      {/* 展示模式按鈕 */}
+      <button 
+        className="presentation-mode-btn"
+        onClick={onTogglePresentationMode}
+        aria-label="展示模式"
+        title="大螢幕展示模式"
+      >
+        📺
       </button>
 
       {/* 設定面板 */}

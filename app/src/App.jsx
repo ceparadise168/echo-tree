@@ -7,7 +7,12 @@ import { OrbitControls, Text } from '@react-three/drei';
 import { useDeviceDetect, triggerHapticFeedback, requestGyroscopePermission } from './hooks/useDeviceDetect';
 import { useGyroscope } from './hooks/useGyroscope';
 import { useMouseParallax } from './hooks/useMouseParallax';
-import CardModal from './components/CardModal';import CardForm from './components/CardForm';import ControlHints from './components/ControlHints';
+import { useKonamiCode } from './hooks/useKonamiCode';
+import CardModal from './components/CardModal';
+import CardForm from './components/CardForm';
+import ControlHints from './components/ControlHints';
+import PresentationMode from './components/PresentationMode';
+import { ChristmasScene } from './components/ChristmasMode';
 import './App.css';
 
 // 1. 天空配置
@@ -330,7 +335,37 @@ export default function App() {
   const [gyroscopePermission, setGyroscopePermission] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
   const [showCardForm, setShowCardForm] = useState(false);
-  const [userCards, setUserCards] = useState([]);
+  const [showPresentationMode, setShowPresentationMode] = useState(false);
+  const [userCards, setUserCards] = useState(() => {
+    // 從 localStorage 讀取已儲存的卡片
+    try {
+      const saved = localStorage.getItem('echoTree_userCards');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 重建 THREE.Color 物件
+        return parsed.map(card => ({
+          ...card,
+          colorObj: new THREE.Color(card.color),
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to load cards from localStorage:', e);
+    }
+    return [];
+  });
+  
+  // 儲存卡片到 localStorage
+  useEffect(() => {
+    if (userCards.length > 0) {
+      try {
+        // 移除 colorObj（THREE.Color 無法 JSON 序列化）
+        const toSave = userCards.map(({ colorObj, ...rest }) => rest);
+        localStorage.setItem('echoTree_userCards', JSON.stringify(toSave));
+      } catch (e) {
+        console.error('Failed to save cards to localStorage:', e);
+      }
+    }
+  }, [userCards]);
   
   // 裝置偵測
   const { isMobile, hasGyroscope, prefersReducedMotion } = useDeviceDetect();
@@ -368,6 +403,35 @@ export default function App() {
   // 重置攝影機視角
   const handleResetCamera = useCallback(() => {
     setCameraKey(prev => prev + 1);
+  }, []);
+  
+  // 切換展示模式
+  const handleTogglePresentationMode = useCallback(() => {
+    setShowPresentationMode(prev => !prev);
+  }, []);
+  
+  // 聖誕彩蛋模式
+  const handleChristmasActivate = useCallback(() => {
+    triggerHapticFeedback([100, 50, 100, 50, 100]); // 特殊震動
+  }, []);
+  
+  const { isActivated: isChristmasMode, reset: resetChristmasMode, secretAreaProps } = useKonamiCode(handleChristmasActivate);
+  
+  // 產生種子卡片資料（供聖誕模式使用）
+  const seedCardsData = useMemo(() => {
+    return new Array(SEED_CARD_COUNT).fill().map((_, index) => {
+      const randomDaysAgo = Math.floor(Math.random() * 365);
+      const cardDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
+      const seedColors = ['#6B7280', '#9CA3AF', '#7C9CBF', '#8B9DC3', '#A0AEC0'];
+      
+      return {
+        index,
+        memory: MEMORIES[index % MEMORIES.length],
+        date: cardDate.toLocaleDateString('zh-TW'),
+        color: seedColors[index % seedColors.length],
+        isSeed: true,
+      };
+    });
   }, []);
   
   // 處理新卡片提交
@@ -455,6 +519,7 @@ export default function App() {
         onToggleGyroscope={handleToggleGyroscope}
         onRequestGyroscope={handleRequestGyroscope}
         onResetCamera={handleResetCamera}
+        onTogglePresentationMode={handleTogglePresentationMode}
       />
       
       {/* 卡片填寫表單 */}
@@ -470,6 +535,32 @@ export default function App() {
         <CardModal 
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
+        />
+      )}
+      
+      {/* 大螢幕展示模式 */}
+      {showPresentationMode && (
+        <PresentationMode 
+          userCards={userCards}
+          seedCardCount={SEED_CARD_COUNT}
+          onClose={() => setShowPresentationMode(false)}
+        />
+      )}
+      
+      {/* 隱藏彩蛋觸發區域（左下角） */}
+      <div 
+        className="secret-area"
+        {...secretAreaProps}
+        aria-hidden="true"
+      />
+      
+      {/* 聖誕彩蛋模式 */}
+      {isChristmasMode && (
+        <ChristmasScene 
+          userCards={userCards}
+          seedCards={seedCardsData}
+          prefersReducedMotion={prefersReducedMotion}
+          onClose={resetChristmasMode}
         />
       )}
     </div>

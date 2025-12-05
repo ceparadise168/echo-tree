@@ -1,0 +1,185 @@
+/* 聖誕模式覆蓋層 */
+.christmas-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3000;
+  animation: christmasFadeIn 1s ease-out;
+}
+
+@keyframes christmasFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 歡迎畫面 */
+.christmas-welcome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(0, 50, 0, 0.8) 0%, rgba(10, 22, 40, 0.95) 100%);
+  z-index: 3100;
+  animation: welcomeFadeOut 3s ease-in-out forwards;
+}
+
+@keyframes welcomeFadeOut {
+  0%, 70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.welcome-content {
+  text-align: center;
+  animation: welcomeScale 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes welcomeScale {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.welcome-emoji {
+  font-size: 6rem;
+  display: block;
+  margin-bottom: 20px;
+  animation: emojiWiggle 1s ease-in-out infinite;
+}
+
+@keyframes emojiWiggle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.welcome-content h1 {
+  color: #ff4444;
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin: 0 0 15px 0;
+  text-shadow: 
+    0 0 20px rgba(255, 68, 68, 0.5),
+    2px 2px 0 #006600,
+    4px 4px 0 rgba(0, 0, 0, 0.3);
+  font-family: 'Georgia', serif;
+}
+
+.welcome-content p {
+  color: #ffffff;
+  font-size: 1.5rem;
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* 返回按鈕 */
+.christmas-exit-btn {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 3050;
+}
+
+.christmas-exit-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%);
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 0 30px rgba(100, 200, 255, 0.3);
+}
+
+.christmas-exit-btn span:first-child {
+  font-size: 1.3rem;
+}
+
+/* 聖誕裝飾邊框 */
+.christmas-border {
+  position: fixed;
+  font-size: 2rem;
+  opacity: 0.6;
+  animation: borderFloat 3s ease-in-out infinite;
+  z-index: 3050;
+  pointer-events: none;
+}
+
+.christmas-border.top-left {
+  top: 20px;
+  left: 20px;
+  animation-delay: 0s;
+}
+
+.christmas-border.top-right {
+  top: 20px;
+  right: 20px;
+  animation-delay: 0.5s;
+}
+
+.christmas-border.bottom-left {
+  bottom: 100px;
+  left: 20px;
+  animation-delay: 1s;
+}
+
+.christmas-border.bottom-right {
+  bottom: 100px;
+  right: 20px;
+  animation-delay: 1.5s;
+}
+
+@keyframes borderFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .welcome-emoji {
+    font-size: 4rem;
+  }
+
+  .welcome-content h1 {
+    font-size: 2.2rem;
+  }
+
+  .welcome-content p {
+    font-size: 1.1rem;
+  }
+
+  .christmas-exit-btn {
+    padding: 12px 24px;
+    font-size: 0.9rem;
+  }
+
+  .christmas-border {
+    font-size: 1.5rem;
+  }
+}

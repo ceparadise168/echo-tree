@@ -125,6 +125,52 @@
   margin-bottom: 20px;
 }
 
+/* 收件人欄位 */
+.recipient-field {
+  margin-bottom: 15px;
+}
+
+.recipient-input-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.recipient-icon {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.recipient-input-wrapper input[type="text"] {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: white;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.recipient-input-wrapper input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.recipient-input-wrapper input[type="text"]:focus {
+  outline: none;
+  border-color: #FF69B4;
+  background: rgba(255, 105, 180, 0.05);
+}
+
+.recipient-hint {
+  margin: 8px 0 0 0;
+  font-size: 0.8rem;
+  color: #FF69B4;
+  text-align: left;
+  animation: fadeIn 0.2s ease-out;
+}
+
 /* 姓名欄位 */
 .name-field {
   margin-bottom: 15px;

@@ -21,6 +21,7 @@ export default function CardForm({ onSubmit, onClose }) {
   const [memory, setMemory] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [recipient, setRecipient] = useState('');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0].color);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +54,7 @@ export default function CardForm({ onSubmit, onClose }) {
     const newCard = {
       memory: memory.trim(),
       authorName: isAnonymous ? '' : authorName.trim(),
+      recipient: recipient.trim(),
       date: new Date().toLocaleDateString('zh-TW'),
       color: selectedColor,
       isUserCreated: true,
@@ -117,6 +119,25 @@ export default function CardForm({ onSubmit, onClose }) {
         </div>
         
         <form onSubmit={handleSubmit}>
+          {/* 收件人欄位 */}
+          <div className="form-field recipient-field">
+            <div className="recipient-input-wrapper">
+              <span className="recipient-icon">💝</span>
+              <input
+                type="text"
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value.slice(0, 20))}
+                placeholder="給誰？（選填）"
+                maxLength={20}
+                disabled={isSubmitting}
+                style={{ borderColor: selectedColor + '40' }}
+              />
+            </div>
+            {recipient.trim() && (
+              <p className="recipient-hint">💌 這張卡片將獲贈給「{recipient.trim()}」</p>
+            )}
+          </div>
+
           {/* 姓名欄位 */}
           <div className="form-field name-field">
             <div className="name-input-wrapper">

@@ -95,3 +95,26 @@ html, body {
     font-size: 24px;
   }
 }
+
+/* 隱藏彩蛋觸發區域 */
+.secret-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 60px;
+  z-index: 50;
+  cursor: default;
+  /* 完全透明，不可見 */
+  background: transparent;
+  /* 偵錯用：取消下面的註解可以看到區域 */
+  /* background: rgba(255, 0, 0, 0.1); */
+}
+
+/* 手機上稍微大一點方便觸發 */
+@media (max-width: 768px) {
+  .secret-area {
+    width: 80px;
+    height: 80px;
+  }
+}

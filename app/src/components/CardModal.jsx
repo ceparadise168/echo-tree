@@ -51,6 +51,14 @@ export default function CardModal({ card, onClose }) {
         </div>
         
         <div className="modal-body">
+          {/* 收件人顯示 */}
+          {card.recipient && (
+            <div className="recipient-display">
+              <span className="recipient-label">💝 給</span>
+              <span className="recipient-name">{card.recipient}</span>
+            </div>
+          )}
+          
           <p className="memory-text">{card.memory}</p>
           <div className="memory-meta">
             <span className="memory-date">
