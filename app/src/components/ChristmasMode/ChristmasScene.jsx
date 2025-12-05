@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useMemo, useEffect, useState, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
@@ -7,6 +7,8 @@ import Snowfall from './Snowfall';
 import ChristmasTree from './ChristmasTree';
 import Fireplace from './Fireplace';
 import { GingerbreadCrowd } from './GingerbreadMan';
+import { Aurora } from './Aurora';
+import { MagicParticles } from './MagicParticles';
 import './ChristmasMode.css';
 
 /**
@@ -146,17 +148,24 @@ export default function ChristmasScene({
       {/* 3D 場景 */}
       <Canvas camera={{ position: [12, 8, 12], fov: 60 }}>
         <color attach="background" args={['#0a1628']} />
-        <fog attach="fog" args={['#0a1628', 15, 50]} />
+        <fog attach="fog" args={['#0a1628', 20, 60]} />
         
         {/* 光源 */}
-        <ambientLight intensity={0.2} />
-        <directionalLight position={[10, 20, 10]} intensity={0.5} />
+        <ambientLight intensity={0.15} />
+        <directionalLight position={[10, 20, 10]} intensity={0.4} />
+        <pointLight position={[0, 10, 0]} intensity={0.5} color="#ffaa44" />
         
         {/* 攝影機控制 */}
         <ChristmasCameraController />
         
+        {/* 極光效果 */}
+        <Aurora />
+        
         {/* 雪花 */}
-        <Snowfall count={400} />
+        <Snowfall count={prefersReducedMotion ? 200 : 400} />
+        
+        {/* 魔法粒子 */}
+        {!prefersReducedMotion && <MagicParticles />}
         
         {/* 聖誕樹 */}
         <ChristmasTree position={[0, -3, 0]} />
