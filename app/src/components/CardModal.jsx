@@ -56,8 +56,11 @@ export default function CardModal({ card, onClose }) {
             <span className="memory-date">
               📅 {card.date}
             </span>
-            {card.isUserCreated && (
-              <span className="user-created-badge">🌟 我的記憶</span>
+            {card.isUserCreated && card.authorName && (
+              <span className="author-badge">💫 {card.authorName} 的記憶</span>
+            )}
+            {card.isUserCreated && !card.authorName && (
+              <span className="author-badge anonymous">🌙 一位旅人的記憶</span>
             )}
           </div>
         </div>

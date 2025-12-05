@@ -194,8 +194,15 @@
   border-radius: 12px;
 }
 
-.user-created-badge {
+.author-badge {
   color: #FFD700;
   font-size: 0.85rem;
   margin-left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.author-badge.anonymous {
+  color: rgba(200, 200, 220, 0.8);
 }

@@ -19,6 +19,8 @@ const PRESET_COLORS = [
 
 export default function CardForm({ onSubmit, onClose }) {
   const [memory, setMemory] = useState('');
+  const [authorName, setAuthorName] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0].color);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +52,7 @@ export default function CardForm({ onSubmit, onClose }) {
     // 建立新卡片資料
     const newCard = {
       memory: memory.trim(),
+      authorName: isAnonymous ? '' : authorName.trim(),
       date: new Date().toLocaleDateString('zh-TW'),
       color: selectedColor,
       isUserCreated: true,
@@ -114,6 +117,41 @@ export default function CardForm({ onSubmit, onClose }) {
         </div>
         
         <form onSubmit={handleSubmit}>
+          {/* 姓名欄位 */}
+          <div className="form-field name-field">
+            <div className="name-input-wrapper">
+              <input
+                type="text"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value.slice(0, 20))}
+                placeholder="你的名字（選填）"
+                maxLength={20}
+                disabled={isSubmitting || isAnonymous}
+                className={isAnonymous ? 'disabled' : ''}
+                style={{ borderColor: selectedColor + '40' }}
+              />
+              <label className="anonymous-toggle">
+                <input
+                  type="checkbox"
+                  checked={isAnonymous}
+                  onChange={(e) => {
+                    setIsAnonymous(e.target.checked);
+                    if (e.target.checked) setAuthorName('');
+                  }}
+                  disabled={isSubmitting}
+                />
+                <span className="toggle-label">匿名</span>
+              </label>
+            </div>
+            <p className="name-hint">
+              {isAnonymous 
+                ? '🌙 將以「一位旅人的記憶」顯示' 
+                : authorName.trim() 
+                  ? `💫 將以「${authorName.trim()} 的記憶」顯示`
+                  : '✨ 留空也會以匿名顯示'}
+            </p>
+          </div>
+
           <div className="form-field">
             <textarea
               value={memory}
@@ -199,7 +237,7 @@ export default function CardForm({ onSubmit, onClose }) {
         </form>
 
         <div className="form-footer">
-          <p>你的記憶將匿名顯示在星空中</p>
+          <p>你的記憶將化為星空中閃耀的光點 ✨</p>
         </div>
       </div>
     </div>
