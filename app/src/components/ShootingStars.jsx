@@ -7,6 +7,7 @@ const TRAIL_LENGTH = 15;
 
 export function ShootingStars({ trigger }) {
   const linesRef = useRef();
+  const lastTrigger = useRef(trigger);
   
   // 儲存流星的狀態
   const meteors = useMemo(() => {
@@ -37,7 +38,10 @@ export function ShootingStars({ trigger }) {
 
   // 觸發流星
   useEffect(() => {
-    if (!trigger) return;
+    if (trigger === lastTrigger.current) return; // 僅在 trigger 變化時觸發
+    lastTrigger.current = trigger;
+    if (!linesRef.current) return;
+    linesRef.current.frustumCulled = false; // 確保不被裁切
 
     // 每次觸發發射 3-5 顆流星
     const launchCount = 3 + Math.floor(Math.random() * 3);
@@ -51,13 +55,13 @@ export function ShootingStars({ trigger }) {
         
         // 隨機起始位置 (調整為視野可見範圍)
         m.position.set(
-          (Math.random() - 0.5) * 40, // X: -20 to 20
-          5 + Math.random() * 15,     // Y: 5 to 20 (更低，確保在視野內)
-          (Math.random() - 0.5) * 20  // Z: -10 to 10 (避免被霧氣遮擋)
+          (Math.random() - 0.5) * 30, // X: -15 to 15 (更集中)
+          6 + Math.random() * 12,     // Y: 6 to 18 (更低)
+          (Math.random() - 0.5) * 14  // Z: -7 to 7 (更靠近鏡頭)
         );
 
         // 隨機速度
-        m.speed = 0.5 + Math.random() * 0.5;
+        m.speed = 0.35 + Math.random() * 0.25; // 更慢，停留久一點
         m.velocity.set(
           (Math.random() - 0.5) * 0.3, // 輕微左右偏移
           -1.0,                        // 主要向下
@@ -92,7 +96,7 @@ export function ShootingStars({ trigger }) {
       if (m.active) {
         // 更新位置
         m.position.add(m.velocity);
-        m.life -= 0.015; // 生命週期遞減
+        m.life -= 0.01; // 放慢衰減，留更久
 
         // 計算尾巴位置 (反向延伸)
         const tailPos = m.position.clone().sub(
@@ -133,7 +137,7 @@ export function ShootingStars({ trigger }) {
     if (activeCount > 0 || linesRef.current.visible) {
       linesRef.current.geometry.attributes.position.needsUpdate = true;
       linesRef.current.geometry.attributes.color.needsUpdate = true;
-      linesRef.current.visible = true;
+      linesRef.current.visible = activeCount > 0;
     }
   });
 
