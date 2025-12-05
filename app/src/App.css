@@ -1,0 +1,48 @@
+/* 全域應用樣式 */
+
+/* 游標樣式 */
+canvas {
+  cursor: grab;
+}
+
+canvas:active {
+  cursor: grabbing;
+}
+
+/* 選取文字時的樣式 */
+::selection {
+  background: rgba(255, 215, 0, 0.3);
+  color: white;
+}
+
+/* 焦點樣式 - 無障礙 */
+*:focus-visible {
+  outline: 2px solid #FFD700;
+  outline-offset: 2px;
+}
+
+/* 減少動態偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  /* 觸控裝置優化 */
+  canvas {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+}
+
+/* 隱藏滾動條但保持可滾動 */
+html, body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
