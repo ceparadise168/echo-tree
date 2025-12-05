@@ -54,6 +54,18 @@ const CameraController = ({ mousePosition, gyroOrientation, isMobile, gyroscopeE
   return null;
 };
 
+// 記憶內容列表
+const MEMORIES = [
+  "第一次團隊聚餐，大家笑得很開心 🎉",
+  "深夜趕專案，但一起奮鬥的感覺真好 💪",
+  "新成員加入，團隊又壯大了！🌟",
+  "產品上線那天，我們都哭了 😭",
+  "年末尾牙，贏了大獎！🏆",
+  "一起經歷的困難，讓我們更團結 ❤️",
+  "那個 bug 修了三天，終於解決了！🐛",
+  "客戶的感謝信，是最好的鼓勵 📧",
+];
+
 // 3. 記憶星空 (使用 InstancedMesh 優化 + 互動支援)
 const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, isModalOpen }) => {
   const meshRef = useRef();
@@ -63,19 +75,28 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
 
   // 為每個實例生成穩定的屬性，只運行一次。
   const cards = useMemo(() => {
-    return new Array(CARD_COUNT).fill().map((_, index) => ({
-      index,
-      position: [
-        (Math.random() - 0.5) * SPREAD_X,
-        (Math.random() - 0.5) * SPREAD_Y,
-        (Math.random() - 0.5) * SPREAD_Z,
-      ],
-      color: Math.random() > 0.5 ? '#FFD700' : '#FF69B4',
-      colorObj: Math.random() > 0.5 ? new THREE.Color('#FFD700') : new THREE.Color('#FF69B4'),
-      delay: Math.random() * 10,
-      speed: 0.5 + Math.random() * 0.5,
-      rotationSpeed: 0.2 + Math.random() * 0.2,
-    }));
+    return new Array(CARD_COUNT).fill().map((_, index) => {
+      // 產生穩定的隨機日期（過去一年內）
+      const randomDaysAgo = Math.floor(Math.random() * 365);
+      const cardDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
+      
+      return {
+        index,
+        position: [
+          (Math.random() - 0.5) * SPREAD_X,
+          (Math.random() - 0.5) * SPREAD_Y,
+          (Math.random() - 0.5) * SPREAD_Z,
+        ],
+        color: Math.random() > 0.5 ? '#FFD700' : '#FF69B4',
+        colorObj: Math.random() > 0.5 ? new THREE.Color('#FFD700') : new THREE.Color('#FF69B4'),
+        delay: Math.random() * 10,
+        speed: 0.5 + Math.random() * 0.5,
+        rotationSpeed: 0.2 + Math.random() * 0.2,
+        // 穩定的記憶內容和日期
+        memory: MEMORIES[index % MEMORIES.length],
+        date: cardDate.toLocaleDateString('zh-TW'),
+      };
+    });
   }, []);
 
   // 組件掛載後，一次性應用實例顏色。
