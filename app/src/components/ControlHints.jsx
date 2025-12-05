@@ -10,7 +10,9 @@ export default function ControlHints({
   onToggleGyroscope, 
   onRequestGyroscope, 
   onResetCamera,
-  onTogglePresentationMode 
+  onTogglePresentationMode,
+  isAutoPilot,
+  onToggleAutoPilot
 }) {
   const [isVisible, setIsVisible] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -81,6 +83,16 @@ export default function ControlHints({
         title="大螢幕展示模式"
       >
         📺
+      </button>
+
+      {/* 自動導航按鈕 */}
+      <button 
+        className={`auto-pilot-btn ${isAutoPilot ? 'active' : ''}`}
+        onClick={onToggleAutoPilot}
+        aria-label={isAutoPilot ? "關閉自動導航" : "開啟自動導航"}
+        title="自動導航模式"
+      >
+        {isAutoPilot ? '🛑' : '🛸'}
       </button>
 
       {/* 設定面板 */}

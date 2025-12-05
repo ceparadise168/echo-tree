@@ -14,6 +14,7 @@ import ControlHints from './components/ControlHints';
 import PresentationMode from './components/PresentationMode';
 import { ChristmasScene } from './components/ChristmasMode';
 import { ShootingStars } from './components/ShootingStars';
+import { AutoPilotController } from './components/AutoPilotController';
 import './App.css';
 
 // 1. 天空配置
@@ -72,50 +73,21 @@ const MEMORIES = [
 ];
 
 // 3. 記憶星空 (使用 InstancedMesh 優化 + 互動支援)
-const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, isModalOpen, userCards }) => {
+const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, isModalOpen, userCards, seedCards }) => {
   const meshRef = useRef();
   const userMeshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const { camera, gl } = useThree();
 
-  // 為每個實例生成穩定的屬性，只運行一次。
-  const cards = useMemo(() => {
-    return new Array(SEED_CARD_COUNT).fill().map((_, index) => {
-      // 產生穩定的隨機日期（過去一年內）
-      const randomDaysAgo = Math.floor(Math.random() * 365);
-      const cardDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
-      
-      // 種子卡片使用較淡的顏色（半透明白色/淡藍）
-      const seedColors = ['#6B7280', '#9CA3AF', '#7C9CBF', '#8B9DC3', '#A0AEC0'];
-      const colorHex = seedColors[index % seedColors.length];
-      
-      return {
-        index,
-        position: [
-          (Math.random() - 0.5) * SPREAD_X,
-          (Math.random() - 0.5) * SPREAD_Y,
-          (Math.random() - 0.5) * SPREAD_Z,
-        ],
-        color: colorHex,
-        colorObj: new THREE.Color(colorHex),
-        delay: Math.random() * 10,
-        speed: 0.3 + Math.random() * 0.3, // 種子卡片慢一點
-        rotationSpeed: 0.1 + Math.random() * 0.1,
-        // 穩定的記憶內容和日期
-        memory: MEMORIES[index % MEMORIES.length],
-        date: cardDate.toLocaleDateString('zh-TW'),
-        isSeed: true, // 標記為種子卡片
-      };
-    });
-  }, []);
-
   // 組件掛載後，一次性應用實例顏色。
   useEffect(() => {
-    const colorArray = new Float32Array(SEED_CARD_COUNT * 3);
-    cards.forEach((card, i) => card.colorObj.toArray(colorArray, i * 3));
-    meshRef.current.geometry.setAttribute('color', new THREE.InstancedBufferAttribute(colorArray, 3));
-  }, [cards]);
+    if (seedCards && seedCards.length > 0) {
+      const colorArray = new Float32Array(seedCards.length * 3);
+      seedCards.forEach((card, i) => card.colorObj.toArray(colorArray, i * 3));
+      meshRef.current.geometry.setAttribute('color', new THREE.InstancedBufferAttribute(colorArray, 3));
+    }
+  }, [seedCards]);
 
   // 為使用者卡片應用顏色
   useEffect(() => {
@@ -171,7 +143,7 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
     if (closestHit) {
       const instanceId = closestHit.instanceId;
       if (instanceId !== undefined) {
-        const card = isUserCard ? userCards[instanceId] : cards[instanceId];
+        const card = isUserCard ? userCards[instanceId] : seedCards[instanceId];
         if (eventType === 'click') {
           // 模態框開啟時不處理點擊
           if (isModalOpen) return;
@@ -186,7 +158,7 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
     } else if (eventType === 'hover') {
       onCardHover?.(null);
     }
-  }, [camera, gl, raycaster, cards, userCards, onCardClick, onCardHover, isModalOpen]);
+  }, [camera, gl, raycaster, seedCards, userCards, onCardClick, onCardHover, isModalOpen]);
 
   // 綁定事件
   useEffect(() => {
@@ -216,29 +188,31 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
     const t = prefersReducedMotion ? 0 : state.clock.getElapsedTime();
     
     // 核心優化：單一循環更新所有卡片的矩陣。
-    cards.forEach((card, i) => {
-      const { position, delay, speed, rotationSpeed } = card;
-      const isHovered = hoveredCard === i;
+    if (seedCards) {
+      seedCards.forEach((card, i) => {
+        const { position, delay, speed, rotationSpeed } = card;
+        const isHovered = hoveredCard === i;
+        
+        // 懸停時放大 1.05 倍
+        const scale = isHovered ? 1.15 : 1;
+        
+        // 更新虛擬物件的變換
+        dummy.position.set(
+          position[0],
+          position[1] + (prefersReducedMotion ? 0 : Math.sin(t * speed + delay) * 0.5),
+          position[2]
+        );
+        dummy.rotation.z = prefersReducedMotion ? 0 : Math.sin(t * rotationSpeed + delay) * 0.05;
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+        
+        // 將此變換應用於特定實例
+        meshRef.current.setMatrixAt(i, dummy.matrix);
+      });
       
-      // 懸停時放大 1.05 倍
-      const scale = isHovered ? 1.15 : 1;
-      
-      // 更新虛擬物件的變換
-      dummy.position.set(
-        position[0],
-        position[1] + (prefersReducedMotion ? 0 : Math.sin(t * speed + delay) * 0.5),
-        position[2]
-      );
-      dummy.rotation.z = prefersReducedMotion ? 0 : Math.sin(t * rotationSpeed + delay) * 0.05;
-      dummy.scale.set(scale, scale, scale);
-      dummy.updateMatrix();
-      
-      // 將此變換應用於特定實例
-      meshRef.current.setMatrixAt(i, dummy.matrix);
-    });
-    
-    // 告知 Three.js 實例矩陣已更新。
-    meshRef.current.instanceMatrix.needsUpdate = true;
+      // 告知 Three.js 實例矩陣已更新。
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
     
     // 更新使用者卡片
     if (userMeshRef.current && userCards.length > 0) {
@@ -337,6 +311,7 @@ export default function App() {
   const [cameraKey, setCameraKey] = useState(0);
   const [showCardForm, setShowCardForm] = useState(false);
   const [showPresentationMode, setShowPresentationMode] = useState(false);
+  const [isAutoPilot, setIsAutoPilot] = useState(false);
   const [meteorTrigger, setMeteorTrigger] = useState(0);
   const [userCards, setUserCards] = useState(() => {
     // 從 localStorage 讀取已儲存的卡片
@@ -411,6 +386,15 @@ export default function App() {
   const handleTogglePresentationMode = useCallback(() => {
     setShowPresentationMode(prev => !prev);
   }, []);
+
+  // 切換自動導航模式
+  const handleToggleAutoPilot = useCallback(() => {
+    setIsAutoPilot(prev => !prev);
+    // 如果開啟自動導航，重置視角以確保乾淨的開始
+    if (!isAutoPilot) {
+      setCameraKey(prev => prev + 1);
+    }
+  }, [isAutoPilot]);
   
   // 聖誕彩蛋模式
   const handleChristmasActivate = useCallback(() => {
@@ -461,13 +445,22 @@ export default function App() {
         <pointLight position={[10, 10, 10]} intensity={1.5} />
         <fog attach="fog" args={['#050510', 10, 35]} />
         
-        {/* 攝影機控制器 */}
-        <CameraController 
-          mousePosition={mousePosition}
-          gyroOrientation={normalizedOrientation}
-          isMobile={isMobile}
-          gyroscopeEnabled={gyroscopeEnabled && gyroscopePermission}
-          prefersReducedMotion={prefersReducedMotion}
+        {/* 攝影機控制器 (自動導航模式下停用) */}
+        {!isAutoPilot && (
+          <CameraController 
+            mousePosition={mousePosition}
+            gyroOrientation={normalizedOrientation}
+            isMobile={isMobile}
+            gyroscopeEnabled={gyroscopeEnabled && gyroscopePermission}
+            prefersReducedMotion={prefersReducedMotion}
+          />
+        )}
+
+        {/* 自動導航控制器 */}
+        <AutoPilotController 
+          enabled={isAutoPilot}
+          allCards={[...seedCardsData, ...userCards]}
+          onHover={handleCardHover}
         />
         
         {/* 鍵盤控制 */}
@@ -484,6 +477,7 @@ export default function App() {
           prefersReducedMotion={prefersReducedMotion}
           isModalOpen={!!selectedCard || showCardForm}
           userCards={userCards}
+          seedCards={seedCardsData}
         />
         
         <Text color="white" anchorX="center" anchorY="bottom" position={[0, -5, 0]} fontSize={0.5}>
@@ -491,8 +485,9 @@ export default function App() {
         </Text>
 
         <OrbitControls 
+          enabled={!isAutoPilot}
           enablePan={false}
-          autoRotate={!prefersReducedMotion}
+          autoRotate={!prefersReducedMotion && !isAutoPilot}
           autoRotateSpeed={0.1}
           enableDamping={true}
           dampingFactor={0.05}
@@ -526,6 +521,8 @@ export default function App() {
         onRequestGyroscope={handleRequestGyroscope}
         onResetCamera={handleResetCamera}
         onTogglePresentationMode={handleTogglePresentationMode}
+        isAutoPilot={isAutoPilot}
+        onToggleAutoPilot={handleToggleAutoPilot}
       />
       
       {/* 卡片填寫表單 */}
