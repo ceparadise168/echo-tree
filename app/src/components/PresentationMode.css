@@ -45,18 +45,19 @@
 }
 
 .presentation-title h1 {
-  color: white;
+  color: var(--color-text-primary);
+  font-family: var(--font-heading);
   font-size: 1.8rem;
   font-weight: 600;
   margin: 0;
 }
 
 .card-counter {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-secondary);
   font-size: 1rem;
   padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  background: var(--glass-bg);
+  border-radius: var(--radius-full);
 }
 
 .presentation-controls {
@@ -69,42 +70,42 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
   cursor: pointer;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  background: var(--glass-bg);
+  border-radius: var(--radius-md);
+  transition: var(--transition-base);
 }
 
 .filter-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-hover);
 }
 
 .filter-toggle input[type="checkbox"] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #FFD700;
+  accent-color: var(--color-primary);
 }
 
 .pause-btn, .close-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   border: none;
   color: white;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   cursor: pointer;
   font-size: 1.2rem;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .pause-btn:hover, .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg-hover);
   transform: scale(1.1);
 }
 
@@ -124,7 +125,7 @@
 
 .no-cards-message {
   text-align: center;
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .empty-icon {
@@ -136,11 +137,12 @@
 .no-cards-message h2 {
   font-size: 2rem;
   margin: 0 0 10px 0;
+  font-family: var(--font-heading);
 }
 
 .no-cards-message p {
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-secondary);
 }
 
 /* 卡片樣式 */
@@ -158,7 +160,7 @@
   box-shadow: 
     0 0 80px rgba(var(--card-color), 0.2),
     0 30px 100px rgba(0, 0, 0, 0.5);
-  animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cardEnter var(--transition-smooth);
 }
 
 @keyframes cardEnter {
@@ -179,7 +181,7 @@
   margin-bottom: 30px;
   padding: 16px 24px;
   background: linear-gradient(135deg, rgba(255, 105, 180, 0.15) 0%, rgba(255, 182, 193, 0.08) 100%);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255, 105, 180, 0.3);
 }
 
@@ -188,7 +190,7 @@
 }
 
 .recipient-text {
-  color: #FF69B4;
+  color: var(--color-accent);
   font-size: 1.4rem;
   font-weight: 500;
 }
@@ -198,12 +200,13 @@
 }
 
 .presentation-memory p {
-  color: white;
+  color: var(--color-text-primary);
   font-size: 2.4rem;
   line-height: 1.6;
   margin: 0;
   text-align: center;
   font-weight: 300;
+  font-family: var(--font-body);
 }
 
 .presentation-meta {
@@ -211,16 +214,16 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 30px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--glass-border);
 }
 
 .meta-date {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   font-size: 1.1rem;
 }
 
 .meta-author {
-  color: #FFD700;
+  color: var(--color-primary);
   font-size: 1.2rem;
 }
 
@@ -237,15 +240,15 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   border: none;
   color: white;
   width: 60px;
   height: 60px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   cursor: pointer;
   font-size: 2.5rem;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -261,20 +264,20 @@
 }
 
 .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg-hover);
   transform: translateY(-50%) scale(1.1);
 }
 
 /* 進度條 */
 .progress-bar {
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
   position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
   transition: width 0.3s ease;
 }
 
@@ -289,18 +292,18 @@
   gap: 10px;
   padding: 20px;
   background: rgba(0, 0, 0, 0.4);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   backdrop-filter: blur(10px);
 }
 
 .qr-container {
   padding: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: var(--glass-bg);
+  border-radius: var(--radius-md);
 }
 
 .qr-hint {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
   margin: 0;
   text-align: center;
@@ -321,7 +324,7 @@
 }
 
 .presentation-hints span {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 

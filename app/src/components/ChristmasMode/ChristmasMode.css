@@ -80,7 +80,7 @@
     0 0 20px rgba(255, 68, 68, 0.5),
     2px 2px 0 #006600,
     4px 4px 0 rgba(0, 0, 0, 0.3);
-  font-family: 'Georgia', serif;
+  font-family: var(--font-festive);
 }
 
 .welcome-content p {
@@ -100,19 +100,19 @@
   align-items: center;
   gap: 10px;
   padding: 14px 28px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 30px;
-  color: white;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-smooth);
   backdrop-filter: blur(10px);
   z-index: 3050;
 }
 
 .christmas-exit-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%);
+  background: var(--glass-bg-hover);
   transform: translateX(-50%) scale(1.05);
   box-shadow: 0 0 30px rgba(100, 200, 255, 0.3);
 }

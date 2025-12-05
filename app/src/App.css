@@ -17,7 +17,7 @@ canvas:active {
 
 /* 焦點樣式 - 無障礙 */
 *:focus-visible {
-  outline: 2px solid #FFD700;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -54,13 +54,13 @@ html, body {
   right: 20px;
   width: 60px;
   height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   border: none;
   font-size: 28px;
   cursor: pointer;
   z-index: 100;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: var(--transition-smooth);
   display: flex;
   align-items: center;
   justify-content: center;
