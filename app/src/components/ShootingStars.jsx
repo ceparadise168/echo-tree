@@ -51,13 +51,13 @@ export function ShootingStars({ trigger }) {
         
         // 隨機起始位置 (調整為視野可見範圍)
         m.position.set(
-          (Math.random() - 0.5) * 50, // X: -25 to 25 (寬度)
-          10 + Math.random() * 15,    // Y: 10 to 25 (降低高度，原本是 30-40)
-          (Math.random() - 0.5) * 30 - 10 // Z: -25 to 5 (深度)
+          (Math.random() - 0.5) * 40, // X: -20 to 20
+          5 + Math.random() * 15,     // Y: 5 to 20 (更低，確保在視野內)
+          (Math.random() - 0.5) * 20  // Z: -10 to 10 (避免被霧氣遮擋)
         );
 
-        // 隨機速度 (稍微減慢一點以便觀察)
-        m.speed = 0.4 + Math.random() * 0.4;
+        // 隨機速度
+        m.speed = 0.5 + Math.random() * 0.5;
         m.velocity.set(
           (Math.random() - 0.5) * 0.3, // 輕微左右偏移
           -1.0,                        // 主要向下

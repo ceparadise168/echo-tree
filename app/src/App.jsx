@@ -246,6 +246,7 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
           opacity={0.4}
           emissiveIntensity={0.3}
           toneMapped={false}
+          side={THREE.DoubleSide}
         />
       </instancedMesh>
       
@@ -257,6 +258,7 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
             vertexColors
             emissiveIntensity={1.2}
             toneMapped={false}
+            side={THREE.DoubleSide}
           />
         </instancedMesh>
       )}
