@@ -403,18 +403,28 @@ export default function App() {
   
   const { isActivated: isChristmasMode, reset: resetChristmasMode, secretAreaProps } = useKonamiCode(handleChristmasActivate);
   
-  // 產生種子卡片資料（供聖誕模式使用）
+  // 產生種子卡片資料（供聖誕模式使用 + EchoSky）
   const seedCardsData = useMemo(() => {
     return new Array(SEED_CARD_COUNT).fill().map((_, index) => {
       const randomDaysAgo = Math.floor(Math.random() * 365);
       const cardDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
       const seedColors = ['#6B7280', '#9CA3AF', '#7C9CBF', '#8B9DC3', '#A0AEC0'];
+      const colorHex = seedColors[index % seedColors.length];
       
       return {
         index,
+        position: [
+          (Math.random() - 0.5) * SPREAD_X,
+          (Math.random() - 0.5) * SPREAD_Y,
+          (Math.random() - 0.5) * SPREAD_Z,
+        ],
+        color: colorHex,
+        colorObj: new THREE.Color(colorHex),
+        delay: Math.random() * 10,
+        speed: 0.3 + Math.random() * 0.3, // 種子卡片慢一點
+        rotationSpeed: 0.1 + Math.random() * 0.1,
         memory: MEMORIES[index % MEMORIES.length],
         date: cardDate.toLocaleDateString('zh-TW'),
-        color: seedColors[index % seedColors.length],
         isSeed: true,
       };
     });
