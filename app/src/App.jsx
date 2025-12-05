@@ -28,12 +28,49 @@ const PARALLAX_INTENSITY = 0.5;
 const GYRO_INTENSITY = 2;
 
 // 2. 攝影機控制器 - 處理視差和陀螺儀效果
-const CameraController = ({ mousePosition, gyroOrientation, isMobile, gyroscopeEnabled, prefersReducedMotion }) => {
-  const { camera } = useThree();
+const CameraController = ({ mousePosition, gyroOrientation, isMobile, gyroscopeEnabled, prefersReducedMotion, onBoundaryDetected }) => {
+  const { camera, raycaster, scene, controls } = useThree();
   const targetRef = useRef({ x: 0, y: 0 });
+  const boundaryTimerRef = useRef(null);
+  const lastCheckTimeRef = useRef(0);
+  const resetProgressRef = useRef(0);
+  const isResettingRef = useRef(false);
   
-  useFrame(() => {
+  useFrame((state, delta) => {
     if (prefersReducedMotion) return;
+    
+    // 處理平滑重置動畫
+    if (isResettingRef.current) {
+      resetProgressRef.current += delta * 0.8; // 控制重置速度
+      
+      if (resetProgressRef.current >= 1) {
+        resetProgressRef.current = 0;
+        isResettingRef.current = false;
+        // 重置完成後確保 OrbitControls 同步
+        if (controls) {
+          controls.target.set(0, 0, 0);
+          controls.update();
+        }
+      } else {
+        // 使用 easeInOutCubic 曲線：慢-快-慢
+        const t = resetProgressRef.current;
+        const eased = t < 0.5 
+          ? 4 * t * t * t 
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        
+        // 平滑插值回到初始位置
+        camera.position.lerp(new THREE.Vector3(0, 0, 15), eased * 0.15);
+        camera.rotation.x *= (1 - eased * 0.15);
+        camera.rotation.y *= (1 - eased * 0.15);
+        camera.rotation.z *= (1 - eased * 0.15);
+        
+        if (controls) {
+          controls.target.lerp(new THREE.Vector3(0, 0, 0), eased * 0.15);
+          controls.update();
+        }
+        return; // 重置期間不處理其他邏輯
+      }
+    }
     
     let targetX = 0;
     let targetY = 0;
@@ -55,7 +92,59 @@ const CameraController = ({ mousePosition, gyroOrientation, isMobile, gyroscopeE
     // 只微調攝影機的 lookAt 方向，不改變位置
     camera.rotation.y = -targetRef.current.x * 0.1;
     camera.rotation.x = targetRef.current.y * 0.1;
+
+    // 每 0.5 秒檢查一次視野內是否幾乎沒有卡片
+    const now = state.clock.elapsedTime;
+    if (now - lastCheckTimeRef.current > 0.5) {
+      lastCheckTimeRef.current = now;
+      
+      // 使用 raycaster 檢查視野中心附近是否有物體
+      const directions = [
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0.3, 0, -1).normalize(),
+        new THREE.Vector3(-0.3, 0, -1).normalize(),
+        new THREE.Vector3(0, 0.3, -1).normalize(),
+        new THREE.Vector3(0, -0.3, -1).normalize(),
+      ];
+      
+      let hasNearbyCards = false;
+      for (const dir of directions) {
+        const worldDir = dir.clone().applyQuaternion(camera.quaternion);
+        raycaster.set(camera.position, worldDir);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        if (intersects.length > 0 && intersects[0].distance < 20) {
+          hasNearbyCards = true;
+          break;
+        }
+      }
+      
+      if (!hasNearbyCards) {
+        // 沒有附近卡片，啟動計時器
+        if (!boundaryTimerRef.current) {
+          boundaryTimerRef.current = setTimeout(() => {
+            isResettingRef.current = true;
+            resetProgressRef.current = 0;
+            boundaryTimerRef.current = null;
+          }, 2500); // 2.5 秒後開始重置動畫
+        }
+      } else {
+        // 有卡片，清除計時器
+        if (boundaryTimerRef.current) {
+          clearTimeout(boundaryTimerRef.current);
+          boundaryTimerRef.current = null;
+        }
+      }
+    }
   });
+  
+  // 組件卸載時清理計時器
+  useEffect(() => {
+    return () => {
+      if (boundaryTimerRef.current) {
+        clearTimeout(boundaryTimerRef.current);
+      }
+    };
+  }, []);
   
   return null;
 };
