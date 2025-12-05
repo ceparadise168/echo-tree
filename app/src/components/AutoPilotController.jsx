@@ -4,9 +4,8 @@ import * as THREE from 'three';
 
 // 狀態常數
 const STATE = {
-  WANDERING: 'wandering',   // 漫遊中
-  APPROACHING: 'approaching', // 接近卡片中
-  OBSERVING: 'observing',   // 觀察卡片中
+  HOPPING: 'hopping',   // 短距跳躍
+  PAUSE: 'pause',       // 短暫停留
 };
 
 export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
@@ -14,14 +13,83 @@ export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
   
   // 內部狀態
   const state = useRef({
-    mode: STATE.WANDERING,
+    mode: STATE.HOPPING,
+    startPos: new THREE.Vector3(),
+    ctrlPos: new THREE.Vector3(),
     targetPos: new THREE.Vector3(),
     lookAtTarget: new THREE.Vector3(),
+    duration: 1.0,
+    progress: 0,
     currentCard: null,
     timer: 0,
-    speed: 2,
+    hopStreak: 0,
     noiseOffset: Math.random() * 1000,
+    visited: new Set(),
+    lastCardId: null,
   });
+
+  const easeInOut = (t) => t * t * (3 - 2 * t); // smoothstep
+
+  const makeBezierPoint = (t, p0, p1, p2) => {
+    const a = 1 - t;
+    return p0.clone().multiplyScalar(a * a)
+      .add(p1.clone().multiplyScalar(2 * a * t))
+      .add(p2.clone().multiplyScalar(t * t));
+  };
+
+  const pickFrontOfCard = (card) => {
+    const cardPos = new THREE.Vector3(...card.position);
+    const angle = (Math.random() - 0.5) * Math.PI * 0.6; // 大一點偏移，形成跳躍視角
+    const distance = 2.6 + Math.random() * 1.2;
+    const offset = new THREE.Vector3(
+      Math.sin(angle) * distance,
+      (Math.random() - 0.5) * 1.6,
+      Math.abs(Math.cos(angle)) * distance + 1.2
+    );
+    return { pos: cardPos.clone().add(offset), lookAt: cardPos };
+  };
+
+  const pickCardWeighted = () => {
+    if (!allCards || allCards.length === 0) return null;
+    const camPos = camera.position;
+    let best = null;
+    let bestScore = -Infinity;
+    const visited = state.current.visited;
+    allCards.forEach((card) => {
+      const id = card.isSeed ? card.index : `user-${card.index}`;
+      const pos = new THREE.Vector3(...card.position);
+      const dist = camPos.distanceTo(pos);
+      const nearScore = -dist; // 越近越高
+      const freshBonus = visited.has(id) ? -8 : 8;
+      const repeatPenalty = state.current.lastCardId === id ? -15 : 0;
+      const farJumpBonus = Math.random() > 0.8 ? dist * 0.15 : 0; // 偶爾鼓勵遠跳
+      const score = nearScore + freshBonus + repeatPenalty + farJumpBonus;
+      if (score > bestScore) {
+        bestScore = score;
+        best = card;
+      }
+    });
+    return best;
+  };
+
+  const scheduleHop = (fromPos) => {
+    const picked = pickCardWeighted();
+    if (!picked) return false;
+    const { pos: target, lookAt } = pickFrontOfCard(picked);
+    const mid = fromPos.clone().add(target).multiplyScalar(0.5);
+    // 讓中點有隨機抬升 / 側移，形成電弧感
+    mid.y += 1.5 + Math.random() * 1.5;
+    mid.x += (Math.random() - 0.5) * 1.2;
+    mid.z += (Math.random() - 0.5) * 1.2;
+    state.current.startPos.copy(fromPos);
+    state.current.ctrlPos.copy(mid);
+    state.current.targetPos.copy(target);
+    state.current.lookAtTarget.copy(lookAt);
+    state.current.duration = 1.2 + Math.random() * 0.8; // 1.2~2.0 秒/跳 (放慢節奏)
+    state.current.progress = 0;
+    state.current.currentCard = picked;
+    return true;
+  };
 
   // 初始化隨機漫遊目標
   const pickWanderTarget = () => {
@@ -35,9 +103,11 @@ export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
   // 初始化
   useEffect(() => {
     if (enabled) {
-      state.current.targetPos.copy(pickWanderTarget());
-      state.current.mode = STATE.WANDERING;
+      const start = camera.position.clone();
+      state.current.mode = STATE.HOPPING;
       state.current.timer = 0;
+      state.current.hopStreak = 0;
+      scheduleHop(start);
     }
   }, [enabled]);
 
@@ -47,124 +117,81 @@ export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
     const s = state.current;
     const time = threeState.clock.getElapsedTime();
     
-    // 平滑係數
-    const smoothTime = 2.0;
-    const lookAtSmoothTime = 3.0;
+    const lookAtSmoothTime = 6.0; // 更柔和的轉頭
 
-    // 狀態機邏輯
     switch (s.mode) {
-      case STATE.WANDERING:
-        // 漫遊邏輯
-        s.timer += delta;
-        
-        // 隨機變速：時快時慢
-        // 使用 sin 波加上一些隨機性來調整速度
-        const speedVar = Math.sin(time * 0.5) * 0.5 + 0.5; // 0 to 1
-        s.speed = THREE.MathUtils.lerp(s.speed, 1 + speedVar * 3, delta);
+      case STATE.HOPPING: {
+        s.progress += delta / s.duration;
+        const t = Math.min(1, easeInOut(s.progress));
+        const curvePos = makeBezierPoint(t, s.startPos, s.ctrlPos, s.targetPos);
+        camera.position.lerp(curvePos, 0.8);
+        const currentLookAt = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
+        currentLookAt.lerp(s.lookAtTarget, delta * lookAtSmoothTime);
+        camera.lookAt(currentLookAt);
+        // 微 roll，營造電弧躍遷的側傾
+        const bankAngle = Math.sin(time * 0.8) * 0.02; // 降低傾斜
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, bankAngle, delta * 1.0);
+        // 噪聲再降低
+        camera.position.y += Math.sin(time * 0.9 + s.noiseOffset) * 0.0006;
 
-        // 檢查是否到達目標或超時，切換目標
-        const distToTarget = camera.position.distanceTo(s.targetPos);
-        if (distToTarget < 5 || s.timer > 10) {
-          // 有機率切換到觀察模式
-          if (allCards.length > 0 && Math.random() > 0.4) {
-            // 隨機選一張卡片
-            const randomCard = allCards[Math.floor(Math.random() * allCards.length)];
-            s.currentCard = randomCard;
-            s.mode = STATE.APPROACHING;
-            
-            // 設定觀察位置：卡片前方 3-5 單位
-            const cardPos = new THREE.Vector3(...randomCard.position);
-            
-            // 確保從卡片正面觀察 (Z 軸正向)
-            // 假設卡片面向 +Z，我們希望相機在卡片的 +Z 方向
-            const angle = (Math.random() - 0.5) * Math.PI * 0.5; // -45 到 +45 度，避免看到側面
-            const distance = 4 + Math.random() * 2;
-            
-            const offset = new THREE.Vector3(
-              Math.sin(angle) * distance,
-              (Math.random() - 0.5) * 2, // 稍微上下
-              Math.abs(Math.cos(angle)) * distance + 2 // 確保在前方，並保持距離
-            );
-            
-            s.targetPos.copy(cardPos).add(offset);
-            s.lookAtTarget.copy(cardPos);
-            
-            s.timer = 0;
-          } else {
-            // 繼續漫遊
-            s.targetPos.copy(pickWanderTarget());
-            // 漫遊時看著移動方向的前方，但稍微平滑一點
-            const direction = s.targetPos.clone().sub(camera.position).normalize();
-            s.lookAtTarget.copy(s.targetPos).add(direction.multiplyScalar(5));
-            s.timer = 0;
-          }
-        }
-        break;
-
-      case STATE.APPROACHING:
-        // 接近邏輯
-        const distToCard = camera.position.distanceTo(s.targetPos);
-        // 使用更平滑的減速曲線
-        s.speed = THREE.MathUtils.lerp(s.speed, 1.5, delta * 2); 
-
-        if (distToCard < 0.5) {
-          s.mode = STATE.OBSERVING;
-          s.timer = 0;
-          // 觸發懸停效果
-          if (onHover && s.currentCard) {
-            // 判斷是種子卡片還是使用者卡片來傳遞正確的 ID
+        if (s.progress >= 1) {
+          // 記錄已訪問
+          if (s.currentCard) {
             const id = s.currentCard.isSeed ? s.currentCard.index : `user-${s.currentCard.index}`;
-            onHover(id);
+            state.current.visited.add(id);
+            state.current.lastCardId = id;
+            if (onHover) onHover(id);
+          }
+          s.hopStreak += 1;
+          s.timer = 0;
+          // 決定是否進入暫停
+          const streakMax = 4 + Math.floor(Math.random() * 3); // 4-6 跳後休息（更常休息）
+          if (s.hopStreak >= streakMax) {
+            s.mode = STATE.PAUSE;
+            s.timer = 2.5 + Math.random() * 1.5; // 2.5-4 秒停留（更久）
+            s.hopStreak = 0;
+          } else {
+            // 立即排下一跳
+            const from = camera.position.clone();
+            if (!scheduleHop(from)) {
+              s.mode = STATE.PAUSE;
+              s.timer = 2;
+            }
           }
         }
         break;
+      }
 
-      case STATE.OBSERVING:
-        // 觀察邏輯
-        s.timer += delta;
-        s.speed = 0.1; // 極慢漂浮
-        
-        // 微微漂浮 (呼吸感)
-        const floatOffset = Math.sin(time * 0.8) * 0.002;
-        s.targetPos.y += floatOffset;
-        s.targetPos.x += Math.cos(time * 0.5) * 0.002;
-        
-        // 觀察 4-7 秒後離開
-        if (s.timer > 4 + Math.random() * 3) {
-          s.mode = STATE.WANDERING;
-          s.targetPos.copy(pickWanderTarget());
-          // 離開時先看著下一個目標
-          s.lookAtTarget.copy(s.targetPos);
-          s.currentCard = null;
-          s.timer = 0;
-          if (onHover) onHover(null); // 取消懸停
+      case STATE.PAUSE: {
+        s.timer -= delta;
+        // 停留時做微縮放與呼吸
+        const bobY = Math.sin(time * 0.6) * 0.012;
+        const bobX = Math.cos(time * 0.4) * 0.008;
+        const dolly = Math.sin(time * 0.3) * 0.2;
+        const pausePos = s.targetPos.clone().add(new THREE.Vector3(bobX, bobY, dolly));
+        camera.position.lerp(pausePos, 0.08);
+        const currentLookAt = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
+        currentLookAt.lerp(s.lookAtTarget, delta * lookAtSmoothTime);
+        camera.lookAt(currentLookAt);
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, Math.sin(time * 0.25) * 0.015, delta * 0.8);
+
+        if (s.timer <= 0) {
+          const from = camera.position.clone();
+          if (!scheduleHop(from)) {
+            // 若沒有卡可跳，回到隨機漫遊點
+            const fallback = pickWanderTarget();
+            state.current.startPos.copy(from);
+            state.current.ctrlPos.copy(from.clone().add(fallback).multiplyScalar(0.5));
+            state.current.targetPos.copy(fallback);
+            state.current.lookAtTarget.copy(fallback);
+            state.current.duration = 1.2;
+            state.current.progress = 0;
+          }
+          s.mode = STATE.HOPPING;
         }
         break;
+      }
     }
-
-    // 執行移動
-    // 使用更平滑的阻尼移動 (Damping)
-    const moveStep = s.speed * delta;
-    camera.position.lerp(s.targetPos, moveStep * 0.8); // 增加 lerp 係數讓反應快一點但保持平滑
-
-    // 執行旋轉 (LookAt)
-    // 為了平滑旋轉，我們使用一個虛擬的目標點進行插值
-    const currentLookAt = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
-    currentLookAt.lerp(s.lookAtTarget, delta * lookAtSmoothTime);
-    camera.lookAt(currentLookAt);
-
-    // 添加一點無人機般的晃動 (Noise) 和傾斜 (Banking)
-    camera.position.y += Math.sin(time * 1.5 + s.noiseOffset) * 0.003;
-    
-    // 計算水平轉向速度來決定傾斜角度 (Banking)
-    // 簡單模擬：根據 lookAt 的水平變化
-    const targetRotationY = Math.atan2(
-      s.lookAtTarget.x - camera.position.x,
-      s.lookAtTarget.z - camera.position.z
-    );
-    // 這裡簡化處理，直接給一點隨機傾斜更有漂浮感
-    const bankAngle = Math.sin(time * 0.5) * 0.05;
-    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, bankAngle, delta);
   });
 
   return null;
