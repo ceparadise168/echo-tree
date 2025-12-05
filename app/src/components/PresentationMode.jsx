@@ -75,10 +75,10 @@ export default function PresentationMode({
 
   // 自動輪播
   useEffect(() => {
-    if (isPaused || displayCards.length === 0) return;
+    if (isPaused || displayCards.length === 0) return undefined;
     const timer = setTimeout(goToNext, AUTOPLAY_MS);
     return () => clearTimeout(timer);
-  }, [goToNext, isPaused, displayCards.length]);
+  }, [goToNext, isPaused, displayCards.length, playCycle]);
 
   // 鍵盤控制
   useEffect(() => {
