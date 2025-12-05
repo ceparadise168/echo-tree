@@ -4,7 +4,7 @@ import './PresentationMode.css';
 
 /**
  * 大螢幕展示模式元件
- * - 自動輪播卡片（8秒）
+ * - 自動輪播卡片（9 秒，帶進度動畫）
  * - 左右箭頭/滑動手動切換
  * - 可勾選是否排除種子卡片
  * - 顯示 QR Code 供現場掃描
@@ -27,10 +27,12 @@ export default function PresentationMode({
   seedCardCount = 50,
   onClose 
 }) {
+  const AUTOPLAY_MS = 9000;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [excludeSeedCards, setExcludeSeedCards] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
+  const [playCycle, setPlayCycle] = useState(0); // 用於重啟進度條動畫
 
   // 產生種子卡片資料
   const seedCards = useMemo(() => {
@@ -61,20 +63,21 @@ export default function PresentationMode({
   const goToNext = useCallback(() => {
     if (displayCards.length === 0) return;
     setCurrentIndex(prev => (prev + 1) % displayCards.length);
+    setPlayCycle((c) => c + 1);
   }, [displayCards.length]);
 
   // 切換到上一張
   const goToPrev = useCallback(() => {
     if (displayCards.length === 0) return;
     setCurrentIndex(prev => (prev - 1 + displayCards.length) % displayCards.length);
+    setPlayCycle((c) => c + 1);
   }, [displayCards.length]);
 
   // 自動輪播
   useEffect(() => {
     if (isPaused || displayCards.length === 0) return;
-    
-    const timer = setInterval(goToNext, 8000);
-    return () => clearInterval(timer);
+    const timer = setTimeout(goToNext, AUTOPLAY_MS);
+    return () => clearTimeout(timer);
   }, [goToNext, isPaused, displayCards.length]);
 
   // 鍵盤控制
@@ -195,6 +198,7 @@ export default function PresentationMode({
           </div>
         ) : currentCard ? (
           <div 
+            key={`${currentCard.isSeed ? 'seed' : 'user'}-${currentCard.index}-${playCycle}`}
             className="presentation-card"
             style={{ 
               '--card-color': currentCard.color,
@@ -253,9 +257,10 @@ export default function PresentationMode({
       {displayCards.length > 1 && (
         <div className="progress-bar">
           <div 
+            key={playCycle}
             className="progress-fill"
             style={{ 
-              width: `${((currentIndex + 1) / displayCards.length) * 100}%`,
+              animationDuration: `${AUTOPLAY_MS}ms`,
               animationPlayState: isPaused ? 'paused' : 'running',
             }}
           />

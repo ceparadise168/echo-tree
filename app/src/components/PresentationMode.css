@@ -5,11 +5,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+  background: radial-gradient(circle at 30% 20%, rgba(0, 255, 255, 0.08), transparent 32%),
+              radial-gradient(circle at 70% 40%, rgba(255, 0, 255, 0.06), transparent 30%),
+              linear-gradient(135deg, #050510 0%, #0f1328 45%, #060616 100%);
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.45s ease-out;
   overflow: hidden;
 }
 
@@ -24,8 +26,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  background: rgba(8, 12, 24, 0.6);
+  backdrop-filter: blur(16px) saturate(1.2);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .presentation-title {
@@ -37,6 +40,7 @@
 .title-icon {
   font-size: 2rem;
   animation: sparkle 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(0,255,255,0.3));
 }
 
 @keyframes sparkle {
@@ -56,8 +60,9 @@
   color: var(--color-text-secondary);
   font-size: 1rem;
   padding: 6px 14px;
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border);
 }
 
 .presentation-controls {
@@ -73,9 +78,10 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   padding: 8px 16px;
-  background: var(--glass-bg);
+  background: rgba(255,255,255,0.04);
   border-radius: var(--radius-md);
   transition: var(--transition-base);
+  border: 1px solid var(--glass-border);
 }
 
 .filter-toggle:hover {
@@ -90,7 +96,7 @@
 }
 
 .pause-btn, .close-btn {
-  background: var(--glass-bg);
+  background: rgba(255,255,255,0.06);
   border: none;
   color: white;
   width: 44px;
@@ -105,7 +111,7 @@
 }
 
 .pause-btn:hover, .close-btn:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255,255,255,0.12);
   transform: scale(1.1);
 }
 
@@ -119,7 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 100px;
+  padding: 40px 100px 60px;
   position: relative;
 }
 
@@ -147,20 +153,37 @@
 
 /* 卡片樣式 */
 .presentation-card {
-  background: linear-gradient(
-    135deg,
-    rgba(30, 30, 60, 0.9) 0%,
-    rgba(40, 40, 80, 0.85) 100%
-  );
+  background: linear-gradient(145deg, rgba(24, 26, 48, 0.95), rgba(32, 36, 64, 0.9));
   border: 2px solid;
   border-radius: 30px;
-  padding: 50px 60px;
-  max-width: 900px;
+  padding: 56px 64px;
+  max-width: 960px;
   width: 100%;
-  box-shadow: 
-    0 0 80px rgba(var(--card-color), 0.2),
-    0 30px 100px rgba(0, 0, 0, 0.5);
-  animation: cardEnter var(--transition-smooth);
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.45), 0 30px 100px rgba(0, 0, 0, 0.55);
+  animation: cardEnter 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.presentation-card::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 30% 20%, rgba(0,255,255,0.12), transparent 45%),
+              radial-gradient(circle at 70% 80%, rgba(255,0,255,0.1), transparent 42%);
+  filter: blur(30px);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.presentation-card::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  pointer-events: none;
+  backdrop-filter: blur(2px);
 }
 
 @keyframes cardEnter {
@@ -201,7 +224,7 @@
 
 .presentation-memory p {
   color: var(--color-text-primary);
-  font-size: 2.4rem;
+  font-size: 2.6rem;
   line-height: 1.6;
   margin: 0;
   text-align: center;
@@ -240,7 +263,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--glass-bg);
+  background: rgba(255,255,255,0.06);
   border: none;
   color: white;
   width: 60px;
@@ -264,21 +287,29 @@
 }
 
 .nav-btn:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255,255,255,0.12);
   transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3), 0 0 18px rgba(0,255,255,0.35);
 }
 
 /* 進度條 */
 .progress-bar {
   height: 4px;
-  background: var(--glass-bg);
+  background: rgba(255,255,255,0.08);
   position: relative;
+  overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
-  transition: width 0.3s ease;
+  transform-origin: left;
+  animation: progressRun linear forwards;
+}
+
+@keyframes progressRun {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 /* QR Code 區域 */
@@ -291,9 +322,10 @@
   align-items: center;
   gap: 10px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: var(--radius-md);
   backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
 }
 
 .qr-container {
