@@ -122,6 +122,31 @@
   background: rgba(255, 215, 0, 0.2);
 }
 
+.multi-mode-btn {
+  background: rgba(255,255,255,0.08);
+  color: #c9e7ff;
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  transition: var(--transition-base);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.multi-mode-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0,255,255,0.35);
+  box-shadow: 0 6px 18px rgba(0, 255, 255, 0.18);
+  color: #6cfacf;
+}
+
+.multi-mode-btn.active {
+  background: linear-gradient(135deg, rgba(65,245,255,0.18), rgba(255,255,255,0.12));
+  border-color: rgba(0,255,255,0.45);
+  color: #3ef2ff;
+  box-shadow: 0 12px 28px rgba(62, 242, 255, 0.25);
+}
+
 /* 主要卡片展示區 */
 .presentation-main {
   flex: 1;
@@ -130,6 +155,13 @@
   justify-content: center;
   padding: 40px 100px 60px;
   position: relative;
+}
+
+.presentation-main.multi {
+  padding: 0;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .no-cards-message {
@@ -220,7 +252,6 @@
   font-size: 1.4rem;
   font-weight: 500;
 }
-
 .presentation-memory {
   margin-bottom: 40px;
 }
@@ -260,6 +291,85 @@
 
 .meta-author.anonymous {
   color: rgba(200, 200, 220, 0.8);
+}
+
+/* 多卡流動佈局 */
+.multi-flow {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  border-radius: 26px;
+  overflow: hidden;
+  padding: 30px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(0, 255, 255, 0.14), transparent 45%),
+    radial-gradient(circle at 80% 50%, rgba(255, 0, 255, 0.12), transparent 50%),
+    linear-gradient(135deg, rgba(6, 10, 30, 0.9), rgba(10, 16, 40, 0.85));
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.45);
+}
+
+.multi-flow::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+  pointer-events: none;
+}
+
+.flow-card {
+  position: absolute;
+  width: min(340px, 45vw);
+  padding: 18px 22px;
+  border-radius: 20px;
+  background: rgba(10, 14, 36, 0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08);
+  opacity: 0;
+  animation-name: driftCard;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+
+.flow-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: linear-gradient(140deg, rgba(255,255,255,0.18), transparent 45%);
+  opacity: 0.12;
+}
+
+.flow-card .presentation-recipient {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+}
+
+.flow-card .presentation-memory p {
+  font-size: 1rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.flow-card .presentation-meta {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 18px;
+}
+
+.flow-card .meta-author {
+  font-size: 1rem;
+}
+
+@keyframes driftCard {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.9) rotate(-6deg); }
+  12% { opacity: 1; }
+  70% { opacity: 1; transform: translate(-50%, -55%) scale(1.02) rotate(2deg); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1.08) rotate(0deg); }
 }
 
 /* 導航按鈕 */

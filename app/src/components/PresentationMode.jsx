@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import './PresentationMode.css';
 
 /**
  * 大螢幕展示模式元件
  * - 自動輪播卡片（9 秒，帶進度動畫）
+ * - 多卡流動模式（多張卡片同場隨機浮現/淡出）
  * - 左右箭頭/滑動手動切換
  * - 可勾選是否排除種子卡片
  * - 顯示 QR Code 供現場掃描
@@ -29,11 +30,18 @@ export default function PresentationMode({
 }) {
   const AUTOPLAY_MS = 9000;
   const AUTOPLAY_SEC = Math.round(AUTOPLAY_MS / 1000);
+  const FLOW_MAX_ITEMS = 6;
+  const FLOW_LIFETIME_MS = 13000;
+  const FLOW_SPAWN_MS = 2600;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [excludeSeedCards, setExcludeSeedCards] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
   const [playCycle, setPlayCycle] = useState(0); // 用於重啟進度條動畫
+  const [multiMode, setMultiMode] = useState(false);
+  const [flowItems, setFlowItems] = useState([]);
+  const flowCursor = useRef(0);
+  const flowTimers = useRef([]);
 
   // 產生種子卡片資料
   const seedCards = useMemo(() => {
@@ -76,10 +84,65 @@ export default function PresentationMode({
 
   // 自動輪播
   useEffect(() => {
+    if (multiMode) return undefined; // 多卡模式關閉單卡自動播放
     if (isPaused || displayCards.length === 0) return undefined;
     const timer = setTimeout(goToNext, AUTOPLAY_MS);
     return () => clearTimeout(timer);
-  }, [goToNext, isPaused, displayCards.length, playCycle]);
+  }, [goToNext, isPaused, displayCards.length, playCycle, multiMode]);
+
+  // 多卡模式：定期加入新卡，舊卡淡出後移除
+  const spawnFlowCard = useCallback(() => {
+    if (displayCards.length === 0) return;
+    const idx = flowCursor.current % displayCards.length;
+    flowCursor.current += 1;
+    const card = displayCards[idx];
+    const id = `flow-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 5)}`;
+    const delay = Math.random() * 900;
+    const lifetime = FLOW_LIFETIME_MS + Math.random() * 3000;
+    const top = 18 + Math.random() * 64; // 18% ~ 82%
+    const left = 15 + Math.random() * 70; // 15% ~ 85%
+    const scale = 0.85 + Math.random() * 0.55;
+    const rotate = -6 + Math.random() * 12;
+    const zIndex = 40 + Math.round(scale * 20);
+
+    setFlowItems(prev => {
+      const next = [...prev, { id, card, delay, top, left, scale, rotate, zIndex, duration: lifetime }];
+      return next.slice(-FLOW_MAX_ITEMS);
+    });
+
+    const removalTimer = setTimeout(() => {
+      setFlowItems(prev => prev.filter(item => item.id !== id));
+    }, lifetime + delay);
+
+    flowTimers.current.push(removalTimer);
+  }, [displayCards]);
+
+  useEffect(() => {
+    flowTimers.current.forEach(clearTimeout);
+    flowTimers.current = [];
+    setFlowItems([]);
+
+    if (!multiMode || displayCards.length === 0) {
+      return undefined;
+    }
+
+    flowCursor.current = 0;
+
+    const initialCount = Math.min(FLOW_MAX_ITEMS, displayCards.length);
+    for (let i = 0; i < initialCount; i += 1) {
+      spawnFlowCard();
+    }
+
+    const interval = setInterval(() => {
+      spawnFlowCard();
+    }, FLOW_SPAWN_MS);
+
+    return () => {
+      clearInterval(interval);
+      flowTimers.current.forEach(clearTimeout);
+      flowTimers.current = [];
+    };
+  }, [multiMode, displayCards, spawnFlowCard]);
 
   // 鍵盤控制
   useEffect(() => {
@@ -152,7 +215,9 @@ export default function PresentationMode({
           <h1>記憶星空</h1>
           <span className="card-counter">
             {displayCards.length > 0 
-              ? `${currentIndex + 1} / ${displayCards.length}`
+              ? (multiMode
+                  ? `流動畫面 · ${displayCards.length} 張`
+                  : `${currentIndex + 1} / ${displayCards.length}`)
               : '尚無卡片'
             }
           </span>
@@ -170,13 +235,25 @@ export default function PresentationMode({
             />
             <span>只顯示真實心聲</span>
           </label>
-          
+
           <button 
             className={`pause-btn ${isPaused ? 'paused' : ''}`}
             onClick={() => setIsPaused(prev => !prev)}
             title={isPaused ? '繼續播放' : '暫停'}
+            disabled={multiMode}
           >
             {isPaused ? '▶️' : '⏸️'}
+          </button>
+
+          <button 
+            className={`multi-mode-btn ${multiMode ? 'active' : ''}`}
+            onClick={() => {
+              setMultiMode(prev => !prev);
+              setIsPaused(false);
+            }}
+            title="多卡流動模式"
+          >
+            {multiMode ? '🌌 多卡' : '🌀 單卡'}
           </button>
           
           <button 
@@ -190,12 +267,51 @@ export default function PresentationMode({
       </div>
 
       {/* 主要卡片展示區 */}
-      <div className="presentation-main">
+      <div className={`presentation-main ${multiMode ? 'multi' : ''}`}>
         {displayCards.length === 0 ? (
           <div className="no-cards-message">
             <div className="empty-icon">📝</div>
             <h2>目前還沒有心聲</h2>
             <p>掃描右下角 QR Code 留下你的第一則記憶吧！</p>
+          </div>
+        ) : multiMode ? (
+          <div className="multi-flow">
+            {flowItems.map((item) => (
+              <div
+                key={item.id}
+                className="flow-card"
+                style={{
+                  '--card-color': item.card.color,
+                  borderColor: item.card.color + '50',
+                  top: `${item.top}%`,
+                  left: `${item.left}%`,
+                  transform: `translate(-50%, -50%) scale(${item.scale}) rotate(${item.rotate}deg)`,
+                  animationDuration: `${item.duration}ms`,
+                  animationDelay: `${item.delay}ms`,
+                  zIndex: item.zIndex,
+                }}
+              >
+                {item.card.recipient && (
+                  <div className="presentation-recipient">
+                    <span className="recipient-icon">💝</span>
+                    <span className="recipient-text">給 {item.card.recipient}</span>
+                  </div>
+                )}
+                <div className="presentation-memory">
+                  <p>{item.card.memory}</p>
+                </div>
+                <div className="presentation-meta">
+                  <span className="meta-date">📅 {item.card.date}</span>
+                  {item.card.isSeed ? (
+                    <span className="meta-author seed">✨ 範例記憶</span>
+                  ) : item.card.authorName ? (
+                    <span className="meta-author">💫 {item.card.authorName} 的記憶</span>
+                  ) : (
+                    <span className="meta-author anonymous">🌙 一位旅人的記憶</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ) : currentCard ? (
           <div 
@@ -233,8 +349,8 @@ export default function PresentationMode({
           </div>
         ) : null}
 
-        {/* 左右切換箭頭 */}
-        {displayCards.length > 1 && (
+        {/* 左右切換箭頭（單卡模式才顯示） */}
+        {!multiMode && displayCards.length > 1 && (
           <>
             <button 
               className="nav-btn nav-prev"
@@ -255,7 +371,7 @@ export default function PresentationMode({
       </div>
 
       {/* 進度指示器 */}
-      {displayCards.length > 1 && (
+      {!multiMode && displayCards.length > 1 && (
         <div className="progress-wrap">
           <div className="progress-label">{isPaused ? '暫停' : `自動播放 ~${AUTOPLAY_SEC}s`}</div>
           <div className="progress-bar">
