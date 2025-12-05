@@ -85,7 +85,8 @@
 }
 
 .filter-toggle:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255,255,255,0.08);
+  border-color: var(--color-primary);
 }
 
 .filter-toggle input[type="checkbox"] {
@@ -96,8 +97,8 @@
 }
 
 .pause-btn, .close-btn {
-  background: rgba(255,255,255,0.06);
-  border: none;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
   color: white;
   width: 44px;
   height: 44px;
@@ -108,11 +109,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
 
 .pause-btn:hover, .close-btn:hover {
-  background: rgba(255,255,255,0.12);
-  transform: scale(1.1);
+  background: rgba(255,255,255,0.14);
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
 }
 
 .pause-btn.paused {
@@ -223,7 +226,8 @@
 }
 
 .presentation-memory p {
-  color: var(--color-text-primary);
+  color: #f4f6ff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   font-size: 2.6rem;
   line-height: 1.6;
   margin: 0;
@@ -241,7 +245,7 @@
 }
 
 .meta-date {
-  color: var(--color-text-muted);
+  color: rgba(255,255,255,0.72);
   font-size: 1.1rem;
 }
 
@@ -292,12 +296,31 @@
   box-shadow: 0 10px 40px rgba(0,0,0,0.3), 0 0 18px rgba(0,255,255,0.35);
 }
 
+.nav-btn:active {
+  transform: translateY(-50%) scale(0.96);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
 /* 進度條 */
+.progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 40px 10px;
+}
+
+.progress-label {
+  color: rgba(255,255,255,0.72);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
 .progress-bar {
   height: 4px;
   background: rgba(255,255,255,0.08);
   position: relative;
   overflow: hidden;
+  border-radius: 999px;
 }
 
 .progress-fill {
@@ -305,6 +328,7 @@
   background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
   transform-origin: left;
   animation: progressRun linear forwards;
+  border-radius: 999px;
 }
 
 @keyframes progressRun {

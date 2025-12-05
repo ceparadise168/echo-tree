@@ -28,6 +28,7 @@ export default function PresentationMode({
   onClose 
 }) {
   const AUTOPLAY_MS = 9000;
+  const AUTOPLAY_SEC = Math.round(AUTOPLAY_MS / 1000);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [excludeSeedCards, setExcludeSeedCards] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -255,15 +256,18 @@ export default function PresentationMode({
 
       {/* 進度指示器 */}
       {displayCards.length > 1 && (
-        <div className="progress-bar">
-          <div 
-            key={playCycle}
-            className="progress-fill"
-            style={{ 
-              animationDuration: `${AUTOPLAY_MS}ms`,
-              animationPlayState: isPaused ? 'paused' : 'running',
-            }}
-          />
+        <div className="progress-wrap">
+          <div className="progress-label">{isPaused ? '暫停' : `自動播放 ~${AUTOPLAY_SEC}s`}</div>
+          <div className="progress-bar">
+            <div 
+              key={playCycle}
+              className="progress-fill"
+              style={{ 
+                animationDuration: `${AUTOPLAY_MS}ms`,
+                animationPlayState: isPaused ? 'paused' : 'running',
+              }}
+            />
+          </div>
         </div>
       )}
 
