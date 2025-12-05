@@ -104,9 +104,18 @@ export default function PresentationMode({
     const scale = 0.85 + Math.random() * 0.55;
     const rotate = -6 + Math.random() * 12;
     const zIndex = 40 + Math.round(scale * 20);
+    
+    // 隨機初始位移與最終位移（營造不同飄動軌跡）
+    const startY = -20 - Math.random() * 15; // -20% ~ -35%
+    const endY = -70 - Math.random() * 20; // -70% ~ -90%
+    const startRotate = rotate - 8 + Math.random() * 16; // 初始旋轉有變化
+    const endRotate = rotate + (-4 + Math.random() * 8); // 結束旋轉也略有不同
 
     setFlowItems(prev => {
-      const next = [...prev, { id, card, delay, top, left, scale, rotate, zIndex, duration: lifetime }];
+      const next = [...prev, { 
+        id, card, delay, top, left, scale, rotate, zIndex, duration: lifetime,
+        startY, endY, startRotate, endRotate
+      }];
       return next.slice(-FLOW_MAX_ITEMS);
     });
 
@@ -282,10 +291,14 @@ export default function PresentationMode({
                 className="flow-card"
                 style={{
                   '--card-color': item.card.color,
+                  '--start-y': `${item.startY}%`,
+                  '--end-y': `${item.endY}%`,
+                  '--start-rotate': `${item.startRotate}deg`,
+                  '--end-rotate': `${item.endRotate}deg`,
+                  '--base-scale': item.scale,
                   borderColor: item.card.color + '50',
                   top: `${item.top}%`,
                   left: `${item.left}%`,
-                  transform: `translate(-50%, -50%) scale(${item.scale}) rotate(${item.rotate}deg)`,
                   animationDuration: `${item.duration}ms`,
                   animationDelay: `${item.delay}ms`,
                   zIndex: item.zIndex,

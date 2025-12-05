@@ -332,6 +332,7 @@
   animation-timing-function: ease-in-out;
   animation-fill-mode: forwards;
   pointer-events: none;
+  transform: translate(-50%, var(--start-y, -30%)) scale(var(--base-scale, 1)) rotate(var(--start-rotate, 0deg));
 }
 
 .flow-card::before {
@@ -366,10 +367,21 @@
 }
 
 @keyframes driftCard {
-  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.9) rotate(-6deg); }
-  12% { opacity: 1; }
-  70% { opacity: 1; transform: translate(-50%, -55%) scale(1.02) rotate(2deg); }
-  100% { opacity: 0; transform: translate(-50%, -80%) scale(1.08) rotate(0deg); }
+  0% { 
+    opacity: 0; 
+    transform: translate(-50%, var(--start-y, -30%)) scale(calc(var(--base-scale, 1) * 0.92)) rotate(var(--start-rotate, -6deg)); 
+  }
+  12% { 
+    opacity: 1; 
+  }
+  70% { 
+    opacity: 1; 
+    transform: translate(-50%, calc(var(--start-y, -30%) - 25%)) scale(calc(var(--base-scale, 1) * 1.04)) rotate(calc(var(--start-rotate, 0deg) * 0.3 + var(--end-rotate, 0deg) * 0.7)); 
+  }
+  100% { 
+    opacity: 0; 
+    transform: translate(-50%, var(--end-y, -80%)) scale(calc(var(--base-scale, 1) * 1.1)) rotate(var(--end-rotate, 0deg)); 
+  }
 }
 
 /* 導航按鈕 */
