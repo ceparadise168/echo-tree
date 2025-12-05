@@ -13,6 +13,7 @@ import CardForm from './components/CardForm';
 import ControlHints from './components/ControlHints';
 import PresentationMode from './components/PresentationMode';
 import { ChristmasScene } from './components/ChristmasMode';
+import { ShootingStars } from './components/ShootingStars';
 import './App.css';
 
 // 1. 天空配置
@@ -336,6 +337,7 @@ export default function App() {
   const [cameraKey, setCameraKey] = useState(0);
   const [showCardForm, setShowCardForm] = useState(false);
   const [showPresentationMode, setShowPresentationMode] = useState(false);
+  const [meteorTrigger, setMeteorTrigger] = useState(0);
   const [userCards, setUserCards] = useState(() => {
     // 從 localStorage 讀取已儲存的卡片
     try {
@@ -448,6 +450,7 @@ export default function App() {
       colorObj: new THREE.Color(newCard.color),
     };
     setUserCards(prev => [...prev, cardWithPosition]);
+    setMeteorTrigger(prev => prev + 1); // 觸發流星效果
     triggerHapticFeedback([50, 30, 50]); // 成功震動
   }, [userCards.length]);
 
@@ -470,6 +473,9 @@ export default function App() {
         {/* 鍵盤控制 */}
         <KeyboardController prefersReducedMotion={prefersReducedMotion} />
         
+        {/* 流星效果 */}
+        <ShootingStars trigger={meteorTrigger} />
+
         {/* 星空 */}
         <EchoSky 
           onCardClick={handleCardClick}
