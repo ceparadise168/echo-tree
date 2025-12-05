@@ -4,7 +4,7 @@ import './ControlHints.css';
 /**
  * 控制提示 UI 元件
  */
-export default function ControlHints({ isMobile, gyroscopeEnabled, onToggleGyroscope, onRequestGyroscope }) {
+export default function ControlHints({ isMobile, gyroscopeEnabled, onToggleGyroscope, onRequestGyroscope, onResetCamera }) {
   const [isVisible, setIsVisible] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -54,6 +54,16 @@ export default function ControlHints({ isMobile, gyroscopeEnabled, onToggleGyros
         aria-label="設定"
       >
         ⚙️
+      </button>
+
+      {/* 重置視角按鈕 */}
+      <button 
+        className="reset-camera-btn"
+        onClick={onResetCamera}
+        aria-label="重置視角"
+        title="重置視角"
+      >
+        🏠
       </button>
 
       {/* 設定面板 */}

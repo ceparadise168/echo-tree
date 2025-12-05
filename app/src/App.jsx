@@ -226,6 +226,7 @@ export default function App() {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [gyroscopeEnabled, setGyroscopeEnabled] = useState(false);
   const [gyroscopePermission, setGyroscopePermission] = useState(false);
+  const [cameraKey, setCameraKey] = useState(0);
   
   // 裝置偵測
   const { isMobile, hasGyroscope, prefersReducedMotion } = useDeviceDetect();
@@ -259,10 +260,15 @@ export default function App() {
   const handleToggleGyroscope = useCallback((enabled) => {
     setGyroscopeEnabled(enabled);
   }, []);
+  
+  // 重置攝影機視角
+  const handleResetCamera = useCallback(() => {
+    setCameraKey(prev => prev + 1);
+  }, []);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#050510' }}>
-      <Canvas camera={{ position: [0, 0, 15], fov: 75 }}>
+      <Canvas key={cameraKey} camera={{ position: [0, 0, 15], fov: 75 }}>
         <ambientLight intensity={0.3} />
         <pointLight position={[10, 10, 10]} intensity={1.5} />
         <fog attach="fog" args={['#050510', 10, 35]} />
@@ -293,11 +299,20 @@ export default function App() {
         </Text>
 
         <OrbitControls 
-          enablePan={true} 
+          enablePan={false}
           autoRotate={!prefersReducedMotion}
           autoRotateSpeed={0.1}
           enableDamping={true}
           dampingFactor={0.05}
+          // 限制縮放範圍，避免太近或太遠
+          minDistance={5}
+          maxDistance={25}
+          // 限制垂直旋轉角度，避免翻轉到奇怪的角度
+          minPolarAngle={Math.PI * 0.25}
+          maxPolarAngle={Math.PI * 0.75}
+          // 讓控制更平滑
+          rotateSpeed={0.5}
+          zoomSpeed={0.8}
         />
       </Canvas>
       
@@ -307,6 +322,7 @@ export default function App() {
         gyroscopeEnabled={gyroscopeEnabled}
         onToggleGyroscope={handleToggleGyroscope}
         onRequestGyroscope={handleRequestGyroscope}
+        onResetCamera={handleResetCamera}
       />
       
       {/* 卡片詳情模態框 */}
