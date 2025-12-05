@@ -7,8 +7,7 @@ import { OrbitControls, Text } from '@react-three/drei';
 import { useDeviceDetect, triggerHapticFeedback, requestGyroscopePermission } from './hooks/useDeviceDetect';
 import { useGyroscope } from './hooks/useGyroscope';
 import { useMouseParallax } from './hooks/useMouseParallax';
-import CardModal from './components/CardModal';
-import ControlHints from './components/ControlHints';
+import CardModal from './components/CardModal';import CardForm from './components/CardForm';import ControlHints from './components/ControlHints';
 import './App.css';
 
 // 1. 天空配置
@@ -67,8 +66,9 @@ const MEMORIES = [
 ];
 
 // 3. 記憶星空 (使用 InstancedMesh 優化 + 互動支援)
-const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, isModalOpen }) => {
+const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, isModalOpen, userCards }) => {
   const meshRef = useRef();
+  const userMeshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const { camera, gl } = useThree();
@@ -118,25 +118,52 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
     );
     
     raycaster.setFromCamera(mouse, camera);
+    
+    // 檢查預設卡片
     const intersects = raycaster.intersectObject(meshRef.current);
     
-    if (intersects.length > 0) {
-      const instanceId = intersects[0].instanceId;
+    // 檢查使用者卡片
+    const userIntersects = userMeshRef.current ? raycaster.intersectObject(userMeshRef.current) : [];
+    
+    // 合併結果，優先選擇最近的
+    let closestHit = null;
+    let isUserCard = false;
+    
+    if (intersects.length > 0 && userIntersects.length > 0) {
+      if (intersects[0].distance < userIntersects[0].distance) {
+        closestHit = intersects[0];
+        isUserCard = false;
+      } else {
+        closestHit = userIntersects[0];
+        isUserCard = true;
+      }
+    } else if (intersects.length > 0) {
+      closestHit = intersects[0];
+      isUserCard = false;
+    } else if (userIntersects.length > 0) {
+      closestHit = userIntersects[0];
+      isUserCard = true;
+    }
+    
+    if (closestHit) {
+      const instanceId = closestHit.instanceId;
       if (instanceId !== undefined) {
-        const card = cards[instanceId];
+        const card = isUserCard ? userCards[instanceId] : cards[instanceId];
         if (eventType === 'click') {
           // 模態框開啟時不處理點擊
           if (isModalOpen) return;
           onCardClick?.(card);
           triggerHapticFeedback([30]); // 輕微震動
         } else if (eventType === 'hover') {
-          onCardHover?.(instanceId);
+          // 使用獨特的 ID 來區分預設和使用者卡片
+          const hoverIndex = isUserCard ? `user-${instanceId}` : instanceId;
+          onCardHover?.(hoverIndex);
         }
       }
     } else if (eventType === 'hover') {
       onCardHover?.(null);
     }
-  }, [camera, gl, raycaster, cards, onCardClick, onCardHover, isModalOpen]);
+  }, [camera, gl, raycaster, cards, userCards, onCardClick, onCardHover, isModalOpen]);
 
   // 綁定事件
   useEffect(() => {
@@ -189,17 +216,53 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
     
     // 告知 Three.js 實例矩陣已更新。
     meshRef.current.instanceMatrix.needsUpdate = true;
+    
+    // 更新使用者卡片
+    if (userMeshRef.current && userCards.length > 0) {
+      userCards.forEach((card, i) => {
+        const isHovered = hoveredCard === `user-${i}`;
+        const scale = isHovered ? 1.25 : 1.1; // 使用者卡片稍大一點
+        
+        dummy.position.set(
+          card.position[0],
+          card.position[1] + (prefersReducedMotion ? 0 : Math.sin(t * 0.8 + i) * 0.6),
+          card.position[2]
+        );
+        dummy.rotation.z = prefersReducedMotion ? 0 : Math.sin(t * 0.3 + i) * 0.08;
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+        
+        userMeshRef.current.setMatrixAt(i, dummy.matrix);
+      });
+      userMeshRef.current.instanceMatrix.needsUpdate = true;
+    }
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[null, null, CARD_COUNT]}>
-      <planeGeometry args={[1.5, 1]} />
-      <meshStandardMaterial
-        vertexColors // 使用實例顏色
-        emissiveIntensity={0.8}
-        toneMapped={false}
-      />
-    </instancedMesh>
+    <>
+      {/* 預設卡片 */}
+      <instancedMesh ref={meshRef} args={[null, null, CARD_COUNT]}>
+        <planeGeometry args={[1.5, 1]} />
+        <meshStandardMaterial
+          vertexColors
+          emissiveIntensity={0.8}
+          toneMapped={false}
+        />
+      </instancedMesh>
+      
+      {/* 使用者新增的卡片 */}
+      {userCards.length > 0 && (
+        <instancedMesh ref={userMeshRef} args={[null, null, userCards.length]}>
+          <planeGeometry args={[1.8, 1.2]} />
+          <meshStandardMaterial
+            color="#00FFAA"
+            emissive="#00FFAA"
+            emissiveIntensity={1.2}
+            toneMapped={false}
+          />
+        </instancedMesh>
+      )}
+    </>
   );
 };
 
@@ -248,6 +311,8 @@ export default function App() {
   const [gyroscopeEnabled, setGyroscopeEnabled] = useState(false);
   const [gyroscopePermission, setGyroscopePermission] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
+  const [showCardForm, setShowCardForm] = useState(false);
+  const [userCards, setUserCards] = useState([]);
   
   // 裝置偵測
   const { isMobile, hasGyroscope, prefersReducedMotion } = useDeviceDetect();
@@ -286,6 +351,23 @@ export default function App() {
   const handleResetCamera = useCallback(() => {
     setCameraKey(prev => prev + 1);
   }, []);
+  
+  // 處理新卡片提交
+  const handleCardSubmit = useCallback((newCard) => {
+    // 為新卡片產生位置和索引
+    const cardWithPosition = {
+      ...newCard,
+      index: userCards.length + CARD_COUNT,
+      position: [
+        (Math.random() - 0.5) * SPREAD_X * 0.8,
+        (Math.random() - 0.5) * SPREAD_Y * 0.8,
+        (Math.random() - 0.5) * SPREAD_Z * 0.5 - 2, // 放在前面一點
+      ],
+      colorObj: new THREE.Color(newCard.color),
+    };
+    setUserCards(prev => [...prev, cardWithPosition]);
+    triggerHapticFeedback([50, 30, 50]); // 成功震動
+  }, [userCards.length]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#050510' }}>
@@ -312,7 +394,8 @@ export default function App() {
           onCardHover={handleCardHover}
           hoveredCard={hoveredCard}
           prefersReducedMotion={prefersReducedMotion}
-          isModalOpen={!!selectedCard}
+          isModalOpen={!!selectedCard || showCardForm}
+          userCards={userCards}
         />
         
         <Text color="white" anchorX="center" anchorY="bottom" position={[0, -5, 0]} fontSize={0.5}>
@@ -337,6 +420,16 @@ export default function App() {
         />
       </Canvas>
       
+      {/* 新增卡片按鈕 */}
+      <button 
+        className="add-card-btn"
+        onClick={() => setShowCardForm(true)}
+        aria-label="新增記憶"
+        title="新增記憶"
+      >
+        ✨
+      </button>
+      
       {/* 控制提示 UI */}
       <ControlHints 
         isMobile={isMobile}
@@ -345,6 +438,14 @@ export default function App() {
         onRequestGyroscope={handleRequestGyroscope}
         onResetCamera={handleResetCamera}
       />
+      
+      {/* 卡片填寫表單 */}
+      {showCardForm && (
+        <CardForm 
+          onSubmit={handleCardSubmit}
+          onClose={() => setShowCardForm(false)}
+        />
+      )}
       
       {/* 卡片詳情模態框 */}
       {selectedCard && (

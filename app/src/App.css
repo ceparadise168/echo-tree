@@ -46,3 +46,52 @@ html, body {
   margin: 0;
   padding: 0;
 }
+
+/* 新增卡片按鈕 */
+.add-card-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 4px 20px rgba(255, 215, 0, 0.4),
+    0 0 40px rgba(255, 215, 0, 0.2);
+}
+
+.add-card-btn:hover {
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 
+    0 6px 30px rgba(255, 215, 0, 0.5),
+    0 0 60px rgba(255, 215, 0, 0.3);
+}
+
+.add-card-btn:active {
+  transform: scale(0.95);
+}
+
+.add-card-btn:focus {
+  outline: 3px solid white;
+  outline-offset: 3px;
+}
+
+/* 響應式調整 - 新增卡片按鈕 */
+@media (max-width: 768px) {
+  .add-card-btn {
+    bottom: 90px;
+    right: 15px;
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+}
