@@ -174,3 +174,28 @@
     font-size: 1rem;
   }
 }
+
+/* 種子卡片樣式 */
+.modal-content.seed-card {
+  border-color: rgba(156, 163, 175, 0.3);
+  box-shadow: 
+    0 0 30px rgba(156, 163, 175, 0.2),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.seed-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(156, 163, 175, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.user-created-badge {
+  color: #FFD700;
+  font-size: 0.85rem;
+  margin-left: 10px;
+}

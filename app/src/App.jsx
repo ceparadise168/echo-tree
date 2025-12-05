@@ -11,7 +11,7 @@ import CardModal from './components/CardModal';import CardForm from './component
 import './App.css';
 
 // 1. 天空配置
-const CARD_COUNT = 500; // 增加數量以展示性能
+const SEED_CARD_COUNT = 50; // 種子卡片，讓畫面不會空蕩蕩
 const SPREAD_X = 30;
 const SPREAD_Y = 15;
 const SPREAD_Z = 20;
@@ -75,10 +75,14 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
 
   // 為每個實例生成穩定的屬性，只運行一次。
   const cards = useMemo(() => {
-    return new Array(CARD_COUNT).fill().map((_, index) => {
+    return new Array(SEED_CARD_COUNT).fill().map((_, index) => {
       // 產生穩定的隨機日期（過去一年內）
       const randomDaysAgo = Math.floor(Math.random() * 365);
       const cardDate = new Date(Date.now() - randomDaysAgo * 24 * 60 * 60 * 1000);
+      
+      // 種子卡片使用較淡的顏色（半透明白色/淡藍）
+      const seedColors = ['#6B7280', '#9CA3AF', '#7C9CBF', '#8B9DC3', '#A0AEC0'];
+      const colorHex = seedColors[index % seedColors.length];
       
       return {
         index,
@@ -87,21 +91,22 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
           (Math.random() - 0.5) * SPREAD_Y,
           (Math.random() - 0.5) * SPREAD_Z,
         ],
-        color: Math.random() > 0.5 ? '#FFD700' : '#FF69B4',
-        colorObj: Math.random() > 0.5 ? new THREE.Color('#FFD700') : new THREE.Color('#FF69B4'),
+        color: colorHex,
+        colorObj: new THREE.Color(colorHex),
         delay: Math.random() * 10,
-        speed: 0.5 + Math.random() * 0.5,
-        rotationSpeed: 0.2 + Math.random() * 0.2,
+        speed: 0.3 + Math.random() * 0.3, // 種子卡片慢一點
+        rotationSpeed: 0.1 + Math.random() * 0.1,
         // 穩定的記憶內容和日期
         memory: MEMORIES[index % MEMORIES.length],
         date: cardDate.toLocaleDateString('zh-TW'),
+        isSeed: true, // 標記為種子卡片
       };
     });
   }, []);
 
   // 組件掛載後，一次性應用實例顏色。
   useEffect(() => {
-    const colorArray = new Float32Array(CARD_COUNT * 3);
+    const colorArray = new Float32Array(SEED_CARD_COUNT * 3);
     cards.forEach((card, i) => card.colorObj.toArray(colorArray, i * 3));
     meshRef.current.geometry.setAttribute('color', new THREE.InstancedBufferAttribute(colorArray, 3));
   }, [cards]);
@@ -252,17 +257,19 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
 
   return (
     <>
-      {/* 預設卡片 */}
-      <instancedMesh ref={meshRef} args={[null, null, CARD_COUNT]}>
-        <planeGeometry args={[1.5, 1]} />
+      {/* 種子卡片（較淡、較小） */}
+      <instancedMesh ref={meshRef} args={[null, null, SEED_CARD_COUNT]}>
+        <planeGeometry args={[1.0, 0.7]} />
         <meshStandardMaterial
           vertexColors
-          emissiveIntensity={0.8}
+          transparent
+          opacity={0.4}
+          emissiveIntensity={0.3}
           toneMapped={false}
         />
       </instancedMesh>
       
-      {/* 使用者新增的卡片 */}
+      {/* 使用者新增的卡片（更亮、更大） */}
       {userCards.length > 0 && (
         <instancedMesh ref={userMeshRef} args={[null, null, userCards.length]} key={userCards.length}>
           <planeGeometry args={[1.8, 1.2]} />
@@ -368,7 +375,7 @@ export default function App() {
     // 為新卡片產生位置和索引
     const cardWithPosition = {
       ...newCard,
-      index: userCards.length + CARD_COUNT,
+      index: userCards.length + SEED_CARD_COUNT,
       position: [
         (Math.random() - 0.5) * SPREAD_X * 0.8,
         (Math.random() - 0.5) * SPREAD_Y * 0.8,
