@@ -106,6 +106,18 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
     meshRef.current.geometry.setAttribute('color', new THREE.InstancedBufferAttribute(colorArray, 3));
   }, [cards]);
 
+  // 為使用者卡片應用顏色
+  useEffect(() => {
+    if (userMeshRef.current && userCards.length > 0) {
+      const colorArray = new Float32Array(userCards.length * 3);
+      userCards.forEach((card, i) => {
+        const color = new THREE.Color(card.color);
+        color.toArray(colorArray, i * 3);
+      });
+      userMeshRef.current.geometry.setAttribute('color', new THREE.InstancedBufferAttribute(colorArray, 3));
+    }
+  }, [userCards]);
+
   // 處理點擊和懸停事件
   const handlePointerEvent = useCallback((event, eventType) => {
     // 模態框開啟時停止懸停偵測
@@ -252,11 +264,10 @@ const EchoSky = ({ onCardClick, onCardHover, hoveredCard, prefersReducedMotion, 
       
       {/* 使用者新增的卡片 */}
       {userCards.length > 0 && (
-        <instancedMesh ref={userMeshRef} args={[null, null, userCards.length]}>
+        <instancedMesh ref={userMeshRef} args={[null, null, userCards.length]} key={userCards.length}>
           <planeGeometry args={[1.8, 1.2]} />
           <meshStandardMaterial
-            color="#00FFAA"
-            emissive="#00FFAA"
+            vertexColors
             emissiveIntensity={1.2}
             toneMapped={false}
           />
