@@ -22,12 +22,14 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
+    'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token'
   );
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
   next();
+});
+
+// Handle OPTIONS preflight explicitly
+app.options('/cards', (req, res) => {
+  res.status(200).end();
 });
 
 // Get all cards

@@ -170,7 +170,6 @@ resource "aws_api_gateway_integration" "options_integration" {
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
-  integration_http_method = "POST"
 }
 
 resource "aws_api_gateway_integration_response" "options_integration_response" {
