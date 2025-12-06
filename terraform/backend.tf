@@ -71,12 +71,12 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 # Note: The source code zip will be created and uploaded by the CI/CD pipeline.
 # Here, we define the function and point to a placeholder.
 resource "aws_lambda_function" "cards_api_lambda" {
-  filename      = "api.zip" # This will be provided by our CI/CD pipeline
+  filename      = "${path.module}/../api.zip" # Built by CI/CD in project root
   function_name = "${var.project_name}-cards-api"
   role          = aws_iam_role.lambda_exec_role.arn
   handler       = "index.handler" # Assuming the entry point is index.js and exports a 'handler' function
 
-  source_code_hash = filebase64sha256("api.zip") # Placeholder, will be updated on deploy
+  source_code_hash = filebase64sha256("${path.module}/../api.zip") # Detects changes in deployment package
 
   runtime = "nodejs18.x"
 
