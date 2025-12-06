@@ -1,4 +1,3 @@
-```hcl
 # /terraform/main.tf
 
 terraform {
@@ -26,4 +25,3 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
-```

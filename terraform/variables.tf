@@ -1,4 +1,3 @@
-```hcl
 # /terraform/variables.tf
 
 variable "aws_region" {
@@ -18,4 +17,3 @@ variable "frontend_domain" {
   type        = string
   default     = "" # We'll leave this empty for now to avoid dependency on a registered domain
 }
-```

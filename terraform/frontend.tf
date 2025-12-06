@@ -1,4 +1,3 @@
-```hcl
 # /terraform/frontend.tf
 
 # S3 bucket for storing the static frontend assets
@@ -57,7 +56,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     origin_id   = "S3-${var.project_name}"
 
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.oai.path
+      origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
     }
   }
 
@@ -110,4 +109,3 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     ManagedBy = "Terraform"
   }
 }
-```
