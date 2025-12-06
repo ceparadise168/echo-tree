@@ -183,6 +183,8 @@ resource "aws_api_gateway_integration_response" "options_integration_response" {
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'",
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
+  
+  depends_on = [aws_api_gateway_integration.options_integration]
 }
 
 # Deployment of the API Gateway
@@ -198,7 +200,9 @@ resource "aws_api_gateway_deployment" "api_deployment" {
       aws_api_gateway_method.post_cards_method.id,
       aws_api_gateway_integration.post_cards_integration.id,
       aws_api_gateway_method.options_method.id,
-      aws_api_gateway_integration.options_integration.id
+      aws_api_gateway_integration.options_integration.id,
+      aws_api_gateway_method_response.options_response.id,
+      aws_api_gateway_integration_response.options_integration_response.id
     ]))
   }
 
