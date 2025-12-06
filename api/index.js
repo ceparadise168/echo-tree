@@ -1,4 +1,3 @@
-```javascript
 // api/index.js
 const serverless = require('serverless-http');
 const express = require('express');
@@ -83,4 +82,3 @@ app.use((req, res) => {
 });
 
 module.exports.handler = serverless(app);
-```
