@@ -35,7 +35,7 @@ const TIMING = {
   CRUISE_SCAN: 0.6,
   APPROACH_DURATION: 2.2,     // 稍長，讓變速更明顯
   FOCUS_DURATION: 0.8,        // 稍長，Dolly Zoom 更明顯
-  LOCK_DURATION: 0.25,
+  LOCK_DURATION: 0.4,         // 鎖定靜止時間（增加以減少撕裂感）
   DWELL_DURATION: 3.5,
   UNLOCK_DURATION: 0.8,       // 稍長，reveal 更戲劇化
 };
@@ -72,6 +72,8 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
     orbitCenter: new THREE.Vector3(),
     orbitRadius: 0,
     orbitStartAngle: 0,
+    orbitSpeed: 0,            // 環繞速度（快取避免每幀隨機）
+    lockedPos: new THREE.Vector3(), // 鎖定時的位置（平滑過渡用）
     // 時間
     progress: 0,
     duration: 1.0,
@@ -326,12 +328,11 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
       case STATE.LOCKED: {
         s.progress += delta / s.duration;
         
-        // 極微呼吸
-        const microBreath = Math.sin(time * 2.5) * 0.001;
-        camera.position.y += microBreath;
-        
+        // 完全靜止，不做任何位移（避免撕裂感）
+        // 保持在對焦終點位置
+        camera.position.copy(s.focusEndPos);
         camera.lookAt(s.lookAtTarget);
-        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 12);
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 15);
         
         if (s.progress >= 1) {
           if (s.currentCard) {
@@ -349,6 +350,10 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
             camera.position.x - cardPos.x,
             camera.position.z - cardPos.z
           );
+          // 快取環繞速度（只計算一次）
+          s.orbitSpeed = 0.25 + Math.random() * 0.15;
+          // 記錄鎖定位置（平滑過渡用）
+          s.lockedPos.copy(camera.position);
           
           s.mode = STATE.DWELLING;
           s.progress = 0;
@@ -361,23 +366,21 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
       case STATE.DWELLING: {
         s.progress += delta / s.duration;
         
-        // 環繞角度（緩慢旋轉 15-25 度）
-        const orbitAngle = s.orbitStartAngle + s.progress * (0.25 + Math.random() * 0.15);
+        // 使用快取的環繞速度（避免每幀隨機造成的抖動）
+        const orbitAngle = s.orbitStartAngle + s.progress * s.orbitSpeed;
         
         // 計算環繞位置
         const orbitX = s.orbitCenter.x + Math.sin(orbitAngle) * s.orbitRadius;
         const orbitZ = s.orbitCenter.z + Math.cos(orbitAngle) * s.orbitRadius;
         
-        // 加入呼吸感
-        const breathY = Math.sin(time * 0.6) * 0.012;
-        const breathRadius = Math.sin(time * 0.4) * 0.03;
+        // 輕微呼吸感（用絕對值，不是增量）
+        const breathY = s.lockedPos.y + Math.sin(time * 0.6) * 0.015;
         
-        const orbitPos = new THREE.Vector3(
-          orbitX + breathRadius,
-          camera.position.y + breathY * delta * 2,
-          orbitZ
-        );
-        camera.position.lerp(orbitPos, 0.03);
+        const orbitPos = new THREE.Vector3(orbitX, breathY, orbitZ);
+        
+        // 平滑過渡到環繞位置（前期慢，讓卡片內容浮現不撕裂）
+        const transitionSpeed = s.progress < 0.1 ? 0.02 : 0.04;
+        camera.position.lerp(orbitPos, transitionSpeed);
         
         // 持續注視中心
         camera.lookAt(s.orbitCenter);
