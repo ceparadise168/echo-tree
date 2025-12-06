@@ -1,0 +1,91 @@
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for AWS OIDC authentication
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 1. Configure AWS Credentials using OIDC
+      # -----------------------------------------
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }} # Store your IAM Role ARN in GitHub Secrets
+          aws-region: us-east-1
+
+      # 2. Setup Node.js
+      # ----------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 3. Frontend Build & Deploy
+      # --------------------------
+      - name: Build Frontend
+        run: |
+          cd app
+          npm install
+          npm run build
+      
+      - name: Deploy Frontend to S3
+        run: |
+          aws s3 sync app/dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+
+      # 4. Backend Build
+      # ----------------
+      - name: Build Backend (API)
+        run: |
+          cd api
+          npm install
+          zip -r ../api.zip .
+
+      # 5. Setup Terraform
+      # ------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      # 6. Terraform Deploy
+      # -------------------
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: ./terraform
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        working-directory: ./terraform
+        continue-on-error: true
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -no-color
+        working-directory: ./terraform
+
+      # 7. Invalidate CloudFront Cache
+      # ------------------------------
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+```
