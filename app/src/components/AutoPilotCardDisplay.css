@@ -189,15 +189,13 @@
   }
 }
 
-/* 文字淡入浮現 */
+/* 文字淡入浮現 - 只用 opacity 避免位置偏移 */
 @keyframes textFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(8px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
