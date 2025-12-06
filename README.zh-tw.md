@@ -74,8 +74,8 @@ graph TD
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
 #### Step 1.3 設定 AWS 認證
-1. 登入 [AWS Console](https://aws.amazon.com/console/)，搜尋並進入 **IAM** 服務。
-2. 建立新使用者（例如 `echo-tree-local-admin`），並賦予 `AdministratorAccess`。
+1. 登入 [AWS Console](https://console.aws.amazon.com/)，搜尋並進入 **IAM** 服務。
+2. 建立新使用者（例如 `echo-tree-local-admin`），並賦予 `"AdministratorAccess"`。
 3. 進入該使用者的 **Security credentials** 分頁，建立 Access Key，並立即保存 `Access key ID` 與 `Secret access key`。
 4. 在終端機執行：
    ```bash
