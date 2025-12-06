@@ -60,102 +60,47 @@ graph TD
 
 This guide is designed for everyone, especially junior developers, to understand and execute the deployment of this project. We'll go through each step in detail.
 
-### Phase 1: Local Setup & Manual Deployment
+### Phase 3: Connecting the Frontend and Going Live
 
-In this phase, we'll set up your local environment and run the first deployment manually. This helps you understand what's happening under the hood before we automate it.
+#### Step 3.1: Configure the Frontend Environment
 
-#### Step 1.1: Get the Code
-
-1.  **Fork the Repository**: Go to the [project's GitHub page](https://github.com/your-org/echo-tree) and click the "Fork" button. This creates a copy of the project under your own GitHub account.
-2.  **Clone Your Fork**: Open your terminal, and run this command, replacing `YOUR_USERNAME` with your GitHub username. This downloads the code to your computer.
+1.  Move into the frontend folder:
     ```bash
-    git clone https://github.com/YOUR_USERNAME/echo-tree.git
-    cd echo-tree
+    cd app
     ```
-
-#### Step 1.2: Install Required Tools
-
-Make sure you have these tools installed. If not, click the links for instructions.
--   [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
--   [Node.js (v18+)](https://nodejs.org/en/download/)
--   [Terraform CLI](https://learn.hashicorp.com/tutorials/terraform/install-cli)
--   [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-
-#### Step 1.3: Configure AWS Access (For Your Local Machine)
-
-To allow your computer to talk to AWS, we need to set up credentials.
-
-1.  **Log in to AWS**: Open your browser and log in to the [AWS Management Console](https://aws.amazon.com/console/).
-2.  **Navigate to IAM**: In the search bar at the top, type `IAM` and go to the IAM service page.
-3.  **Create an IAM User**:
-    *   On the left menu, click `Users`, then `Create user`.
-    *   Give it a username, like `echo-tree-local-admin`.
-    *   Click `Next`.
-    *   Select `Attach policies directly` and check the box for `AdministratorAccess`.
-    *   Click `Next` through the tags page, and then `Create user`.
-4.  **Create an Access Key**:
-    *   Click on the username you just created.
-    *   Go to the `Security credentials` tab.
-    *   Scroll down to `Access keys` and click `Create access key`.
-    *   Select `Command Line Interface (CLI)`.
-    *   Acknowledge the recommendation and click `Next`.
-    *   Click `Create access key`.
-    *   **IMPORTANT**: You will see an `Access key ID` and a `Secret access key`. Copy both immediately and save them somewhere safe. You will not see the secret key again.
-5.  **Configure the AWS CLI**: Open your terminal and run:
+2.  Copy the sample environment file and create your local `.env`:
     ```bash
-    aws configure
+    cp .env.example .env
     ```
-    The CLI will prompt you for four pieces of information. Enter the credentials you just saved.
+3.  Edit `.env` and set `VITE_API_BASE_URL` to the base URL from your Terraform output (no trailing slash). Example:
     ```
-    AWS Access Key ID [None]: YOUR_ACCESS_KEY_ID
-    AWS Secret Access Key [None]: YOUR_SECRET_ACCESS_KEY
-    Default region name [None]: us-east-1
-    Default output format [None]: json
+    VITE_API_BASE_URL=https://xxxx.execute-api.us-east-1.amazonaws.com/v1
     ```
-    Your computer is now authenticated with AWS!
+    The React app automatically appends `/cards`, so you never need to hardcode the endpoint.
+4.  Keep `.env` out of Git (it is already ignored) and point teammates to `.env.example` whenever they need to configure their own machines.
 
-#### Step 1.4: Run the First Terraform Deployment
+#### Step 3.2: Test Locally and Push
 
-This is a crucial one-time step to create the initial infrastructure.
-
-1.  **Navigate to the Terraform directory** in your terminal:
+1.  (Recommended) Verify the connection locally from the `app` directory:
     ```bash
-    cd terraform
+    npm install
+    npm run dev
     ```
-2.  **Initialize Terraform**: This command downloads the necessary plugins (like the AWS provider).
+    When you're done testing, stop the dev server with `Ctrl+C` and return to the repo root: `cd ..`.
+2.  Commit any pending work (docs, UI tweaks, etc.) and push to `main` to trigger the pipeline:
     ```bash
-    terraform init
+    git add .
+    git commit -m "feat: hook up API via env"
+    git push origin main
     ```
-3.  **Apply the configuration**: This command reads all `.tf` files and tells AWS what to build.
-    ```bash
-    terraform apply
-    ```
-4.  **Confirm the Plan**: Terraform will show you a plan of all the resources it's about to create. Review it, and if it looks correct, type `yes` and press Enter.
-5.  **Wait for Completion**: This will take a few minutes. Once it's done, Terraform will print a list of `Outputs`.
-    
-    **ACTION**: Copy all of these output values into a temporary text file. You'll need them for the next phase.
+3.  **Open the "Actions" tab** in GitHub to watch the workflow. It will:
+    *   Build the React app and upload it to S3.
+    *   Package and deploy the Lambda API.
+    *   Run `terraform apply` for infrastructure drift.
+    *   Invalidate the CloudFront cache.
+4.  After the run succeeds (green checkmark), open the `cloudfront_domain_name` from your Terraform outputs and confirm the cards load from the live API.
 
----
-
-### Phase 2: Automating Everything with CI/CD
-
-Now we'll connect GitHub to AWS so that deployments can happen automatically and securely, without needing the manual access key you just used.
-
-#### Step 2.1: Set up the "Trust" between GitHub and AWS (OIDC)
-
-1.  **In the AWS Console**, go back to the **IAM** service.
-2.  On the left menu, click `Identity providers`.
-3.  Click `Add provider`.
-    *   Select `OpenID Connect`.
-    *   For **Provider URL**, enter: `https://token.actions.githubusercontent.com`
-    *   Click `Get thumbprint`.
-    *   For **Audience**, enter: `sts.amazonaws.com`
-    *   Click `Add provider`.
-4.  You have now told AWS to trust authentication requests coming from GitHub Actions.
-
-#### Step 2.2: Create a Role for GitHub Actions to Use
-
-We need to create a specific role that GitHub can "assume" to get permissions.
+**Congratulations! Your application is now live, fully automated, and running on a modern serverless stack.** Any future `git push` to the `main` branch will automatically update it.
 
 1.  In **IAM**, go to `Roles` on the left menu and click `Create role`.
 2.  For **Trusted entity type**, select `Web identity`.

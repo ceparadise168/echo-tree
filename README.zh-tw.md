@@ -126,54 +126,44 @@ graph TD
 
 ### 階段三：串接前端並觸發 CI/CD
 
-#### Step 3.1 修改前端程式碼
-1. 打開 `app/src/App.jsx`。
-2. 將原本載入 `seedCardsData` 的 `useEffect` 改成呼叫 API。
-3. 使用 Terraform 輸出的 `api_gateway_invoke_url`，組成 `https://xxxxx.execute-api.us-east-1.amazonaws.com/v1/cards`。
+#### Step 3.1 設定前端環境參數
+1. 切換到前端資料夾：
+   ```bash
+   cd app
+   ```
+2. 複製範例環境設定檔並建立本機 `.env`：
+   ```bash
+   cp .env.example .env
+   ```
+3. 編輯 `.env`，將 `VITE_API_BASE_URL` 設為 Terraform 輸出的 API Gateway 基底網址（不需要加 `/cards`）：
+   ```
+   VITE_API_BASE_URL=https://xxxxx.execute-api.us-east-1.amazonaws.com/v1
+   ```
+   React App 會自動幫你補上 `/cards`，因此不必再改動 `App.jsx`。
+4. `.env` 已列在 `.gitignore`，不要提交；需要分享設定時，請指引同事參考 `app/.env.example`。
 
-```javascript
-const API_URL = "PASTE_YOUR_API_GATEWAY_INVOKE_URL_HERE/cards";
-
-useEffect(() => {
-  const fetchAllCards = async () => {
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const fetchedCards = await response.json();
-      const processed = fetchedCards.map(card => ({
-        ...card,
-        position: [
-          (Math.random() - 0.5) * 20,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 15,
-        ],
-        colorObj: new THREE.Color(card.color),
-      }));
-      setUserCards(processed);
-    } catch (error) {
-      console.error('Failed to fetch cards:', error);
-    }
-  };
-  fetchAllCards();
-}, []);
-```
-
-同時將 `handleCardSubmit` 改成對 `API_URL` 發送 `POST`，並把回傳結果加入場景。
-
-#### Step 3.2 Push 並觀看 CI/CD
-1. 在終端機回到專案根目錄：
+#### Step 3.2 本機測試並推送
+1. 仍在 `app` 資料夾時可以先安裝依賴並啟動開發伺服器確認連線：
+   ```bash
+   npm install
+   npm run dev
+   ```
+   測試結束後使用 `Ctrl+C` 停止，並回到專案根目錄：
    ```bash
    cd ..
-   git add app/src/App.jsx
-   git commit -m "feat: connect frontend to live API"
+   ```
+2. 將這次的變更（例如文件調整或功能開發）提交並推送到 `main` 以觸發 Workflow：
+   ```bash
+   git add .
+   git commit -m "feat: 使用環境變數串接 API"
    git push origin main
    ```
-2. 到 GitHub → **Actions**，可以看到 Workflow 自動執行：
-   - 建置前端並同步到 S3。
-   - 打包後端並部署 Lambda。
-   - Terraform 更新基礎設施。
-   - CloudFront 快取失效，立即提供最新版本。
-3. Workflow 成功 (綠勾) 後，打開 `cloudfront_domain_name`，即可看到正式上線的 Echo Tree！
+3. 前往 GitHub → **Actions** 觀察流程，會自動：
+   - 建置前端並同步 S3。
+   - 打包並更新 Lambda API。
+   - 執行 `terraform apply` 確保基礎設施同步。
+   - 讓 CloudFront 快取失效、立即提供新版內容。
+4. Workflow 成功 (綠勾) 後，打開 `cloudfront_domain_name`，你就能看到前端直接讀取遠端 API 的最終成果！
 
 ---
 

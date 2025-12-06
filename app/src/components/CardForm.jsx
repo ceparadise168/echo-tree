@@ -60,12 +60,14 @@ export default function CardForm({ onSubmit, onClose }) {
       isUserCreated: true,
     };
     
-    // 模擬提交延遲（實際應用中會是 API 呼叫）
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    onSubmit(newCard);
-    setIsSubmitting(false);
-    onClose();
+    try {
+      await onSubmit(newCard);
+      onClose();
+    } catch (submitError) {
+      console.error('Failed to submit card from form:', submitError);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const remainingChars = 100 - memory.length;

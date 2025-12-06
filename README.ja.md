@@ -128,53 +128,44 @@ graph TD
 
 ### フェーズ 3: フロントエンドを API に接続し、本番環境へ
 
-#### Step 3.1 フロントエンドコードの更新
-1. `app/src/App.jsx` を開きます。
-2. `seedCardsData` を読み込む `useEffect` を、API 呼び出しに差し替えます。
-3. Terraform 出力の `api_gateway_invoke_url` を利用し、以下のように修正します：
-
-```javascript
-const API_URL = "PASTE_YOUR_API_GATEWAY_INVOKE_URL_HERE/cards";
-
-useEffect(() => {
-  const fetchAllCards = async () => {
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const fetchedCards = await response.json();
-      const processed = fetchedCards.map(card => ({
-        ...card,
-        position: [
-          (Math.random() - 0.5) * 20,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 15,
-        ],
-        colorObj: new THREE.Color(card.color),
-      }));
-      setUserCards(processed);
-    } catch (error) {
-      console.error('Failed to fetch cards:', error);
-    }
-  };
-  fetchAllCards();
-}, []);
-```
-
-`handleCardSubmit` も `API_URL` に対して `POST` を行うよう更新し、戻り値をシーンに追加します。
-
-#### Step 3.2 Push して CI/CD を確認
-1. 変更を保存し、以下を実行：
+#### Step 3.1 フロントエンド環境の設定
+1. フロントエンド用フォルダーへ移動します。
    ```bash
-   git add app/src/App.jsx
-   git commit -m "feat: connect frontend to live API"
+   cd app
+   ```
+2. サンプル環境変数ファイルを複製し、ローカルの `.env` を作成します。
+   ```bash
+   cp .env.example .env
+   ```
+3. `.env` を開き、Terraform の出力で得た API Gateway のベース URL（末尾のスラッシュや `/cards` は不要）を設定します。
+   ```
+   VITE_API_BASE_URL=https://xxxxx.execute-api.us-east-1.amazonaws.com/v1
+   ```
+   React アプリ側で `/cards` などのパスを自動的に付与するため、`App.jsx` を直接編集する必要はありません。
+4. `.env` は既に `.gitignore` に含まれているのでコミットしないでください。チームで設定方法を共有したい場合は `app/.env.example` を参照してもらいましょう。
+
+#### Step 3.2 ローカル検証とプッシュ
+1. `app` ディレクトリのまま依存パッケージをインストールし、ローカルで接続確認を行います。
+   ```bash
+   npm install
+   npm run dev
+   ```
+   テストが終わったら `Ctrl+C` で停止し、リポジトリルートへ戻ります。
+   ```bash
+   cd ..
+   ```
+2. 今回の変更（README の更新や機能追加など）をコミットし、`main` ブランチへプッシュしてワークフローを走らせます。
+   ```bash
+   git add .
+   git commit -m "feat: env で API を接続"
    git push origin main
    ```
-2. GitHub の **Actions** タブを開き、ワークフローが動いていることを確認します。
-   - フロントエンドをビルドして S3 に同期。
-   - バックエンドを zip 化して Lambda へ更新。
-   - Terraform でインフラを apply。
-   - CloudFront のキャッシュを無効化。
-3. 成功 (緑色) になったら、`cloudfront_domain_name` をブラウザで開きます。
+3. GitHub の **Actions** タブで進行中のワークフローを開きます。
+   - フロントエンドをビルドし、S3 へデプロイ。
+   - Lambda 用の API をパッケージして更新。
+   - `terraform apply` を実行してインフラの差分を反映。
+   - CloudFront キャッシュを無効化し、最新バージョンを即時配信。
+4. 成功（緑のチェック）を確認したら、`cloudfront_domain_name` をブラウザで開き、カードが API から取得されていることをチェックしてください。
 
 **これで Echo Tree が本番環境で稼働を開始しました！** 以降は `main` ブランチへ push するたびに、自動デプロイが行われます。
 

@@ -27,6 +27,67 @@ const SPREAD_Z = 20;
 // 視差效果強度
 const PARALLAX_INTENSITY = 0.5;
 const GYRO_INTENSITY = 2;
+const DEFAULT_CARD_COLOR = '#FFD700';
+
+const normalizeApiBaseUrl = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  return value.replace(/\/+$/, '');
+};
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+const generateCardPosition = () => ([
+  (Math.random() - 0.5) * SPREAD_X * 0.8,
+  (Math.random() - 0.5) * SPREAD_Y * 0.8,
+  (Math.random() - 0.5) * SPREAD_Z * 0.5 - 2,
+]);
+
+const normalizeAuthorName = (value) => {
+  if (!value) return '';
+  const trimmed = String(value).trim();
+  return trimmed.toLowerCase() === 'anonymous' ? '' : trimmed;
+};
+
+const formatCardDate = (value) => {
+  if (!value) {
+    return new Date().toLocaleDateString('zh-TW');
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleDateString('zh-TW');
+};
+
+const createDisplayCard = (card, indexFallback) => {
+  const safeColor = typeof card.color === 'string' && card.color.trim() ? card.color : DEFAULT_CARD_COLOR;
+  let colorObj;
+  try {
+    colorObj = new THREE.Color(safeColor);
+  } catch (error) {
+    console.warn('Invalid color value detected on card; using default color.', error);
+    colorObj = new THREE.Color(DEFAULT_CARD_COLOR);
+  }
+
+  const resolvedIndex = typeof card.index === 'number'
+    ? card.index
+    : typeof indexFallback === 'number'
+      ? indexFallback
+      : SEED_CARD_COUNT + Math.floor(Math.random() * 1000);
+
+  return {
+    ...card,
+    recipient: card.recipient || '',
+    authorName: normalizeAuthorName(card.authorName),
+    date: formatCardDate(card.date),
+    color: safeColor,
+    position: (Array.isArray(card.position) && card.position.length === 3)
+      ? card.position
+      : generateCardPosition(),
+    colorObj,
+    index: resolvedIndex,
+  };
+};
 
 // 2. 攝影機控制器 - 處理視差和陀螺儀效果
 const CameraController = ({ mousePosition, gyroOrientation, isMobile, gyroscopeEnabled, prefersReducedMotion, onBoundaryDetected }) => {
@@ -413,30 +474,61 @@ export default function App() {
       const saved = localStorage.getItem('echoTree_userCards');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // 重建 THREE.Color 物件
-        return parsed.map(card => ({
-          ...card,
-          colorObj: new THREE.Color(card.color),
-        }));
+        return parsed.map((card, idx) => createDisplayCard(card, typeof card.index === 'number' ? card.index : SEED_CARD_COUNT + idx));
       }
     } catch (e) {
       console.error('Failed to load cards from localStorage:', e);
     }
     return [];
   });
+  const apiBaseUrl = API_BASE_URL;
   
   // 儲存卡片到 localStorage
   useEffect(() => {
-    if (userCards.length > 0) {
-      try {
-        // 移除 colorObj（THREE.Color 無法 JSON 序列化）
-        const toSave = userCards.map(({ colorObj, ...rest }) => rest);
-        localStorage.setItem('echoTree_userCards', JSON.stringify(toSave));
-      } catch (e) {
-        console.error('Failed to save cards to localStorage:', e);
-      }
+    try {
+      const toSave = userCards.map(({ colorObj, ...rest }) => rest);
+      localStorage.setItem('echoTree_userCards', JSON.stringify(toSave));
+    } catch (e) {
+      console.error('Failed to save cards to localStorage:', e);
     }
   }, [userCards]);
+
+  useEffect(() => {
+    if (!apiBaseUrl) {
+      console.warn('VITE_API_BASE_URL 尚未設定，無法同步遠端卡片。');
+      return;
+    }
+
+    let isActive = true;
+    const controller = new AbortController();
+
+    const syncCardsFromApi = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/cards`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cards. Status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error('Cards API 回傳格式錯誤，預期為陣列。');
+        }
+        if (!isActive) return;
+        setUserCards(data.map((card, idx) => createDisplayCard({ ...card }, SEED_CARD_COUNT + idx)));
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return;
+        }
+        console.error('同步記憶卡片失敗：', error);
+      }
+    };
+
+    syncCardsFromApi();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [apiBaseUrl]);
   
   // 裝置偵測
   const { isMobile, hasGyroscope, prefersReducedMotion } = useDeviceDetect();
@@ -551,22 +643,48 @@ export default function App() {
   }, [isAutoPilot]);
   
   // 處理新卡片提交
-  const handleCardSubmit = useCallback((newCard) => {
-    // 為新卡片產生位置和索引
-    const cardWithPosition = {
-      ...newCard,
-      index: userCards.length + SEED_CARD_COUNT,
-      position: [
-        (Math.random() - 0.5) * SPREAD_X * 0.8,
-        (Math.random() - 0.5) * SPREAD_Y * 0.8,
-        (Math.random() - 0.5) * SPREAD_Z * 0.5 - 2, // 放在前面一點
-      ],
-      colorObj: new THREE.Color(newCard.color),
-    };
-    setUserCards(prev => [...prev, cardWithPosition]);
-    setMeteorTrigger(prev => prev + 1); // 觸發流星效果
-    triggerHapticFeedback([50, 30, 50]); // 成功震動
-  }, [userCards.length]);
+  const handleCardSubmit = useCallback(async (newCard) => {
+    if (!apiBaseUrl) {
+      const message = 'VITE_API_BASE_URL 尚未設定，無法送出記憶。';
+      console.warn(message);
+      throw new Error(message);
+    }
+
+    const response = await fetch(`${apiBaseUrl}/cards`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        memory: newCard.memory,
+        recipient: newCard.recipient || undefined,
+        authorName: newCard.authorName || undefined,
+        color: newCard.color,
+        date: newCard.date,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(errorText || `Failed to submit card. Status: ${response.status}`);
+    }
+
+    const savedCard = await response.json();
+
+    setUserCards((prev) => {
+      const nextIndex = SEED_CARD_COUNT + prev.length;
+      const cardForDisplay = createDisplayCard({
+        ...savedCard,
+        index: nextIndex,
+        isUserCreated: true,
+      }, nextIndex);
+      return [...prev, cardForDisplay];
+    });
+    setMeteorTrigger(prev => prev + 1);
+    triggerHapticFeedback([50, 30, 50]);
+
+    return savedCard;
+  }, [apiBaseUrl]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#050510' }}>
