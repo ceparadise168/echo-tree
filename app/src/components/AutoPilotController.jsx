@@ -66,6 +66,7 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
     targetPos: new THREE.Vector3(),
     lookAtTarget: new THREE.Vector3(),
     focusStartPos: new THREE.Vector3(),
+    focusEndPos: new THREE.Vector3(),  // 對焦終點（快取避免抖動）
     unlockStartPos: new THREE.Vector3(),
     // 環繞相關
     orbitCenter: new THREE.Vector3(),
@@ -287,6 +288,10 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
           s.mode = STATE.FOCUSING;
           s.progress = 0;
           s.focusStartPos.copy(camera.position);
+          // 快取對焦終點位置（只計算一次，避免每幀隨機造成抖動）
+          const cardPos = new THREE.Vector3(...s.currentCard.position);
+          const focusOffset = new THREE.Vector3(0, 0, DISTANCE.FOCUS_END);
+          s.focusEndPos.copy(cardPos.clone().add(focusOffset));
           s.duration = TIMING.FOCUS_DURATION;
           // 開始 Dolly Zoom
           s.targetFov = FOV.FOCUSED;
@@ -299,19 +304,15 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
         s.progress += delta / s.duration;
         const t = Math.min(1, easeInOutCubic(s.progress));
         
-        const focusEndPos = computeViewingPosition(s.currentCard, DISTANCE.FOCUS_END).pos;
-        const focusPos = s.focusStartPos.clone().lerp(focusEndPos, t);
-        camera.position.lerp(focusPos, 0.12);
+        // 使用快取的終點位置，直接插值（無雙重 lerp）
+        const focusPos = s.focusStartPos.clone().lerp(s.focusEndPos, t);
+        camera.position.copy(focusPos);
         
-        // 精確對準
-        const currentLookAt = new THREE.Vector3(0, 0, -1)
-          .applyQuaternion(camera.quaternion)
-          .add(camera.position);
-        currentLookAt.lerp(s.lookAtTarget, delta * 10);
-        camera.lookAt(currentLookAt);
+        // 直接對準目標，不使用漸進式 lookAt（避免抖動）
+        camera.lookAt(s.lookAtTarget);
         
-        // 穩定
-        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 8);
+        // 穩定 roll
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 10);
 
         if (s.progress >= 1) {
           s.mode = STATE.LOCKED;
