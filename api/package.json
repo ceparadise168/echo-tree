@@ -1,0 +1,20 @@
+```json
+{
+  "name": "echo-tree-api",
+  "version": "1.0.0",
+  "description": "Serverless API for Echo Tree",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.470.0",
+    "@aws-sdk/lib-dynamodb": "^3.470.0",
+    "express": "^4.18.2",
+    "serverless-http": "^3.2.0",
+    "uuid": "^9.0.1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+```
