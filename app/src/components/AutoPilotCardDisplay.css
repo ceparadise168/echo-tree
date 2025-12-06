@@ -6,7 +6,50 @@
   transform: translate(-50%, -50%);
   z-index: 500;
   pointer-events: none;
-  animation: autoPilotLockIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ========== 階段動畫 ========== */
+
+/* 預覽階段 (pre) - 輪廓淡入，內容模糊 */
+.autopilot-card-display.phase-pre {
+  animation: autoPilotPreview 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.autopilot-card-display.phase-pre .autopilot-card-content {
+  opacity: 0.5;
+  filter: blur(3px);
+  transform: scale(0.95);
+  animation: none;
+}
+
+.autopilot-card-display.phase-pre .autopilot-recipient,
+.autopilot-card-display.phase-pre .autopilot-memory,
+.autopilot-card-display.phase-pre .autopilot-meta {
+  opacity: 0;
+}
+
+/* 完整階段 (full) - 內容浮現 */
+.autopilot-card-display.phase-full {
+  animation: autoPilotLockIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.autopilot-card-display.phase-full .autopilot-card-content {
+  animation: contentClarify 0.5s ease-out forwards;
+}
+
+.autopilot-card-display.phase-full .autopilot-recipient {
+  animation: textFadeIn 0.4s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.autopilot-card-display.phase-full .autopilot-memory {
+  animation: textFadeIn 0.5s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.autopilot-card-display.phase-full .autopilot-meta {
+  animation: textFadeIn 0.4s ease-out 0.35s forwards;
+  opacity: 0;
 }
 
 /* 鎖定框架效果 */
@@ -55,8 +98,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(24px);
   transform-origin: center;
-  animation: contentReveal 0.4s ease-out 0.15s forwards;
-  opacity: 0;
+  /* 預設狀態 - 會被階段動畫覆寫 */
+  opacity: 1;
+  filter: none;
+  transform: none;
+  transition: opacity 0.3s, filter 0.3s, transform 0.3s;
 }
 
 /* 呼吸光暈效果 */
@@ -122,6 +168,44 @@
 }
 
 /* === 動畫定義 === */
+
+/* 預覽階段進入 - 輪廓淡入 */
+@keyframes autoPilotPreview {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* 內容從模糊變清晰 */
+@keyframes contentClarify {
+  0% {
+    opacity: 0.5;
+    filter: blur(3px);
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+/* 文字淡入浮現 */
+@keyframes textFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* 整體鎖定進入 */
 @keyframes autoPilotLockIn {

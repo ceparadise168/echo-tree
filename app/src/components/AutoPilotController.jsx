@@ -54,7 +54,7 @@ const FOV = {
   WIDE: 80,                   // 離開時稍廣
 };
 
-export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
+export function AutoPilotController({ enabled, allCards, onHover, onFocus, onPreFocus }) {
   const { camera } = useThree();
   
   const state = useRef({
@@ -86,6 +86,8 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
     targetFov: FOV.DEFAULT,
     // 離開方向
     unlockDirection: 1,        // 1 或 -1，左右交替
+    // 預對焦標記
+    preFocusSent: false,
   });
 
   // === 緩動函數 ===
@@ -263,6 +265,7 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
       // === 接近（Crane + Speed Ramp）===
       case STATE.APPROACHING: {
         s.progress += delta / s.duration;
+        s.preFocusSent = false; // 重置預對焦標記
         
         // Speed Ramp 緩動
         const t = Math.min(1, easeSpeedRamp(s.progress));
@@ -315,6 +318,13 @@ export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
         
         // 穩定 roll
         camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, 0, delta * 10);
+        
+        // 在 60% 時觸發預對焦，讓卡片內容提前開始浮現
+        if (s.progress >= 0.6 && !s.preFocusSent && s.currentCard) {
+          s.preFocusSent = true;
+          const id = s.currentCard.isSeed ? s.currentCard.index : `user-${s.currentCard.index}`;
+          if (onPreFocus) onPreFocus(id);
+        }
 
         if (s.progress >= 1) {
           s.mode = STATE.LOCKED;

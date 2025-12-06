@@ -399,6 +399,7 @@ export default function App() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [autoPilotFocusedCard, setAutoPilotFocusedCard] = useState(null);
+  const [autoPilotPhase, setAutoPilotPhase] = useState(null); // 'pre' | 'locked' | 'full' | null
   const [gyroscopeEnabled, setGyroscopeEnabled] = useState(false);
   const [gyroscopePermission, setGyroscopePermission] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
@@ -490,12 +491,9 @@ export default function App() {
     });
   }, []);
 
-  // 自動導航模式的卡片對焦
-  const handleAutoPilotFocus = useCallback((cardId) => {
-    if (!cardId) {
-      setAutoPilotFocusedCard(null);
-      return;
-    }
+  // 自動導航模式的預對焦（FOCUSING 60%）- 內容開始淡入
+  const handleAutoPilotPreFocus = useCallback((cardId) => {
+    if (!cardId) return;
     // 找到對應的卡片資料
     let card = null;
     if (typeof cardId === 'string' && cardId.startsWith('user-')) {
@@ -505,7 +503,19 @@ export default function App() {
       card = seedCardsData[cardId];
     }
     setAutoPilotFocusedCard(card);
+    setAutoPilotPhase('pre'); // 預覽階段，輪廓淡入
   }, [userCards, seedCardsData]);
+
+  // 自動導航模式的卡片對焦（LOCKED 結束）- 內容完整顯示
+  const handleAutoPilotFocus = useCallback((cardId) => {
+    if (!cardId) {
+      setAutoPilotFocusedCard(null);
+      setAutoPilotPhase(null);
+      return;
+    }
+    // 如果已經有預覽卡片，跳到完整顯示階段
+    setAutoPilotPhase('full');
+  }, []);
   
   // 請求陀螺儀權限
   const handleRequestGyroscope = useCallback(async () => {
@@ -582,6 +592,7 @@ export default function App() {
           allCards={[...seedCardsData, ...userCards]}
           onHover={handleCardHover}
           onFocus={handleAutoPilotFocus}
+          onPreFocus={handleAutoPilotPreFocus}
         />
         
         {/* 鍵盤控制 */}
@@ -678,9 +689,9 @@ export default function App() {
         aria-hidden="true"
       />
       
-      {/* 自動導航卡片顯示 */}
-      {isAutoPilot && autoPilotFocusedCard && (
-        <div className="autopilot-card-display">
+      {/* 自動導航卡片顯示 - 分階段動畫 */}
+      {isAutoPilot && autoPilotFocusedCard && autoPilotPhase && (
+        <div className={`autopilot-card-display phase-${autoPilotPhase}`}>
           <div className="autopilot-card-content">
             {autoPilotFocusedCard.recipient && (
               <div className="autopilot-recipient">💝 給 {autoPilotFocusedCard.recipient}</div>
