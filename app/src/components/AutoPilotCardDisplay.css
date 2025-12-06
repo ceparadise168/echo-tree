@@ -16,10 +16,8 @@
 }
 
 .autopilot-card-display.phase-pre .autopilot-card-content {
-  opacity: 0.5;
-  filter: blur(3px);
-  transform: scale(0.95);
-  animation: none;
+  opacity: 0.6;
+  filter: blur(2px);
 }
 
 .autopilot-card-display.phase-pre .autopilot-recipient,
@@ -30,11 +28,11 @@
 
 /* 完整階段 (full) - 內容浮現 */
 .autopilot-card-display.phase-full {
-  animation: autoPilotLockIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 1;
 }
 
 .autopilot-card-display.phase-full .autopilot-card-content {
-  animation: contentClarify 0.5s ease-out forwards;
+  animation: contentClarify 0.4s ease-out forwards;
 }
 
 .autopilot-card-display.phase-full .autopilot-recipient {
@@ -173,25 +171,21 @@
 @keyframes autoPilotPreview {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.85);
   }
   100% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
 }
 
 /* 內容從模糊變清晰 */
 @keyframes contentClarify {
   0% {
-    opacity: 0.5;
-    filter: blur(3px);
-    transform: scale(0.95);
+    opacity: 0.6;
+    filter: blur(2px);
   }
   100% {
     opacity: 1;
     filter: blur(0);
-    transform: scale(1);
   }
 }
 
