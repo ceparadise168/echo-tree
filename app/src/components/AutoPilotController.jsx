@@ -8,7 +8,7 @@ const STATE = {
   PAUSE: 'pause',       // 短暫停留
 };
 
-export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
+export function AutoPilotController({ enabled, allCards, onHover, onFocus }) {
   const { camera } = useThree();
   
   // 內部狀態
@@ -141,6 +141,8 @@ export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
             state.current.visited.add(id);
             state.current.lastCardId = id;
             if (onHover) onHover(id);
+            // 通知聚焦於此卡片
+            if (onFocus) onFocus(id);
           }
           s.hopStreak += 1;
           s.timer = 0;
@@ -176,6 +178,8 @@ export function AutoPilotController({ enabled, allCards, onHover, onSelect }) {
         camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, Math.sin(time * 0.25) * 0.015, delta * 0.8);
 
         if (s.timer <= 0) {
+          // 離開暫停，清除聚焦卡片
+          if (onFocus) onFocus(null);
           const from = camera.position.clone();
           if (!scheduleHop(from)) {
             // 若沒有卡可跳，回到隨機漫遊點

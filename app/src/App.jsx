@@ -16,6 +16,7 @@ import { ChristmasScene } from './components/ChristmasMode';
 import { ShootingStars } from './components/ShootingStars';
 import { AutoPilotController } from './components/AutoPilotController';
 import './App.css';
+import './components/AutoPilotCardDisplay.css';
 
 // 1. 天空配置
 const SEED_CARD_COUNT = 50; // 種子卡片，讓畫面不會空蕩蕩
@@ -397,6 +398,7 @@ const KeyboardController = ({ prefersReducedMotion }) => {
 export default function App() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [autoPilotFocusedCard, setAutoPilotFocusedCard] = useState(null);
   const [gyroscopeEnabled, setGyroscopeEnabled] = useState(false);
   const [gyroscopePermission, setGyroscopePermission] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
@@ -453,40 +455,7 @@ export default function App() {
   const handleCardHover = useCallback((index) => {
     setHoveredCard(index);
   }, []);
-  
-  // 請求陀螺儀權限
-  const handleRequestGyroscope = useCallback(async () => {
-    const granted = await requestGyroscopePermission();
-    setGyroscopePermission(granted);
-    if (granted) {
-      setGyroscopeEnabled(true);
-    }
-  }, []);
-  
-  // 切換陀螺儀
-  const handleToggleGyroscope = useCallback((enabled) => {
-    setGyroscopeEnabled(enabled);
-  }, []);
-  
-  // 重置攝影機視角
-  const handleResetCamera = useCallback(() => {
-    setCameraKey(prev => prev + 1);
-  }, []);
-  
-  // 切換展示模式
-  const handleTogglePresentationMode = useCallback(() => {
-    setShowPresentationMode(prev => !prev);
-  }, []);
 
-  // 切換自動導航模式
-  const handleToggleAutoPilot = useCallback(() => {
-    setIsAutoPilot(prev => !prev);
-    // 如果開啟自動導航，重置視角以確保乾淨的開始
-    if (!isAutoPilot) {
-      setCameraKey(prev => prev + 1);
-    }
-  }, [isAutoPilot]);
-  
   // 聖誕彩蛋模式
   const handleChristmasActivate = useCallback(() => {
     triggerHapticFeedback([100, 50, 100, 50, 100]); // 特殊震動
@@ -520,6 +489,56 @@ export default function App() {
       };
     });
   }, []);
+
+  // 自動導航模式的卡片對焦
+  const handleAutoPilotFocus = useCallback((cardId) => {
+    if (!cardId) {
+      setAutoPilotFocusedCard(null);
+      return;
+    }
+    // 找到對應的卡片資料
+    let card = null;
+    if (typeof cardId === 'string' && cardId.startsWith('user-')) {
+      const idx = parseInt(cardId.replace('user-', ''));
+      card = userCards[idx];
+    } else {
+      card = seedCardsData[cardId];
+    }
+    setAutoPilotFocusedCard(card);
+  }, [userCards, seedCardsData]);
+  
+  // 請求陀螺儀權限
+  const handleRequestGyroscope = useCallback(async () => {
+    const granted = await requestGyroscopePermission();
+    setGyroscopePermission(granted);
+    if (granted) {
+      setGyroscopeEnabled(true);
+    }
+  }, []);
+  
+  // 切換陀螺儀
+  const handleToggleGyroscope = useCallback((enabled) => {
+    setGyroscopeEnabled(enabled);
+  }, []);
+  
+  // 重置攝影機視角
+  const handleResetCamera = useCallback(() => {
+    setCameraKey(prev => prev + 1);
+  }, []);
+  
+  // 切換展示模式
+  const handleTogglePresentationMode = useCallback(() => {
+    setShowPresentationMode(prev => !prev);
+  }, []);
+
+  // 切換自動導航模式
+  const handleToggleAutoPilot = useCallback(() => {
+    setIsAutoPilot(prev => !prev);
+    // 如果開啟自動導航，重置視角以確保乾淨的開始
+    if (!isAutoPilot) {
+      setCameraKey(prev => prev + 1);
+    }
+  }, [isAutoPilot]);
   
   // 處理新卡片提交
   const handleCardSubmit = useCallback((newCard) => {
@@ -562,6 +581,7 @@ export default function App() {
           enabled={isAutoPilot}
           allCards={[...seedCardsData, ...userCards]}
           onHover={handleCardHover}
+          onFocus={handleAutoPilotFocus}
         />
         
         {/* 鍵盤控制 */}
@@ -658,6 +678,28 @@ export default function App() {
         aria-hidden="true"
       />
       
+      {/* 自動導航卡片顯示 */}
+      {isAutoPilot && autoPilotFocusedCard && (
+        <div className="autopilot-card-display">
+          <div className="autopilot-card-content">
+            {autoPilotFocusedCard.recipient && (
+              <div className="autopilot-recipient">💝 給 {autoPilotFocusedCard.recipient}</div>
+            )}
+            <div className="autopilot-memory">{autoPilotFocusedCard.memory}</div>
+            <div className="autopilot-meta">
+              <span>📅 {autoPilotFocusedCard.date}</span>
+              {autoPilotFocusedCard.isSeed ? (
+                <span className="seed-badge">✨ 範例記憶</span>
+              ) : autoPilotFocusedCard.authorName ? (
+                <span>💫 {autoPilotFocusedCard.authorName}</span>
+              ) : (
+                <span>🌙 匿名記憶</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 聖誕彩蛋模式 */}
       {isChristmasMode && (
         <ChristmasScene 
