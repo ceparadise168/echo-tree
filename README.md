@@ -1,230 +1,325 @@
-# Echo Tree: A Modern Web Application Showcase
+<div align="center">
 
-> 🌐 Language versions: [English](README.md) · [繁體中文](README.zh-tw.md) · [日本語](README.ja.md)
+# ✨ Echo Tree
 
-Welcome to the Echo Tree project! This is more than just a 3D interactive application; it's a comprehensive showcase of modern cloud architecture, DevOps principles, and automated workflows.
+### Transform team memories into a constellation of stars
 
-This document serves as both an explanation of the architecture and a step-by-step guide to deploying the entire stack from scratch.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/erictung1999/echo-tree)](https://github.com/erictung1999/echo-tree/issues)
 
-## 🏛️ Architecture Overview
+**[English](README.md)** · [繁體中文](README.zh-tw.md) · [日本語](README.ja.md)
 
-This project is built upon the **[12-Factor App](https://12factor.net/)** methodology, utilizing a **Serverless-first** approach on AWS. The entire infrastructure is managed as code (IaC) and deployed automatically via a CI/CD pipeline.
+<br />
 
-### Core Principles
-- **Infrastructure as Code (IaC)**: All cloud resources (database, servers, CDN) are defined in code using Terraform. No manual clicking in the AWS console.
-- **CI/CD Automation**: Every `git push` to the `main` branch automatically triggers a pipeline that tests, builds, and deploys the entire application.
-- **Serverless Compute**: We use AWS Lambda for our backend, meaning we have no servers to manage, and it scales automatically with demand.
-- **Scalable & Cost-Effective**: The architecture is designed to handle high traffic while remaining extremely cost-effective (pay-per-use).
+<img src="docs/demo.gif" alt="Echo Tree Demo" width="800" />
 
-### Technology Stack
+<br />
 
-| Domain | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Cloud Platform** | AWS | The foundation for all our services. |
-| **Frontend** | React, Three.js, Vite | For a rich, interactive 3D user experience. |
-| **Frontend Deploy** | S3 + CloudFront | Globally distributed, fast, and secure static site hosting. |
-| **Backend API** | API Gateway + Lambda | Fully managed, scalable, serverless API. |
-| **Database** | DynamoDB | High-performance, scalable NoSQL database. |
-| **IaC** | Terraform | Defining and managing our cloud infrastructure as code. |
-| **CI/CD** | GitHub Actions | Automating the entire build and deployment process. |
+*An immersive 3D experience where every memory becomes a glowing star in your team's universe.*
 
-### Architecture Diagram
+<br />
 
-```mermaid
-graph TD
-    subgraph "Development"
-        A[Developer] -- "git push" --> B{GitHub}
-    end
+[Features](#-features) · [Quick Start](#-quick-start) · [Architecture](#%EF%B8%8F-architecture) · [Deployment](#-deployment) · [Contributing](#-contributing)
 
-    subgraph "CI/CD Pipeline (GitHub Actions)"
-        B -- "Trigger" --> C{CI/CD Workflow}
-        C -- "1. Lint & Test" --> D[Run Tests]
-        D -- "2. Build Frontend" --> E[Vite Build]
-        E -- "3. Deploy Frontend" --> F[Sync to S3]
-        F -- "4. Build & Deploy Backend" --> G[Package Lambda]
-        G -- "5. Deploy Infra" --> H[Terraform Apply]
-    end
+</div>
 
-    subgraph "AWS Cloud Environment (Managed by Terraform)"
-        I(User) -- "HTTPS" --> J[CloudFront CDN]
-        J -- "Static Content" --> K[(S3 Bucket)]
-        J -- "API Request /api/*" --> L[API Gateway]
-        L -- "Trigger" --> M[Lambda Function]
-        M -- "Read/Write Data" --> N[(DynamoDB)]
-    end
+---
+
+## 🎯 What is Echo Tree?
+
+Echo Tree is an **interactive 3D memory collection app** where teams can create, share, and explore memories as glowing cards floating in a virtual starfield. Perfect for:
+
+- 🎤 **All-Hands Meetings** — Collect team kudos and highlights in real-time
+- 🎉 **Celebrations & Milestones** — Capture birthday wishes, anniversary memories
+- 📅 **Year-End Reviews** — Visualize a year of achievements together
+- 🏆 **Hackathons & Events** — Create shared memory spaces with QR code access
+
+Beyond the experience, Echo Tree serves as a **modern cloud architecture showcase**, demonstrating best practices in serverless development, Infrastructure as Code, and CI/CD automation.
+
+---
+
+## ⭐ Features
+
+### 🌌 3D Interactive Starfield
+
+Fly through a universe of memories with smooth, performant 3D graphics. Built with **Three.js** and **React Three Fiber**, using **InstancedMesh** for efficient rendering of hundreds of cards in a single draw call.
+
+### ✍️ Memory Cards with AI Color Suggestions
+
+Create beautiful memory cards with an optional **AI-powered color recommendation** based on the emotion in your text. Powered by the **Lumina Spark** model using `transformers.js`, running entirely in-browser via Web Workers.
+
+### 🎬 Cinematic AutoPilot Navigation
+
+Experience Hollywood-style camera movements with our AutoPilot mode:
+- **Dolly Zoom** — Focus effect that draws you into each memory
+- **Speed Ramping** — Dynamic slow-fast-slow transitions for dramatic effect  
+- **Crane & Orbit Shots** — Professional cinematography techniques
+- **Smart Card Selection** — Weighted algorithm avoids repetition
+
+### 📺 Presentation Mode
+
+Perfect for displaying on large screens during events:
+- **Auto-rotation** with 9-second intervals and progress indicator
+- **Multi-card flow mode** — Cards fade in and out beautifully
+- **QR Code integration** — Attendees scan to add their memories live
+- **Keyboard shortcuts** — ← → navigate, Space/P pause, ESC exit
+
+### 📱 Cross-Device Experience
+
+Works beautifully everywhere:
+- **Gyroscope control** on mobile — Tilt your phone to navigate the starfield
+- **Haptic feedback** — Feel gentle vibrations on interactions
+- **Mouse parallax** on desktop — Subtle movement follows your cursor
+- **Respects `prefers-reduced-motion`** — Accessibility-first design
+
+### 🎄 Hidden Easter Egg
+
+Enter the **Konami Code** (↑↑↓↓←→←→BA) to unlock a magical Christmas surprise:
+- ❄️ Snowfall with realistic physics
+- 🌲 Decorated 3D Christmas tree
+- 🔥 Cozy animated fireplace
+- 🌌 Aurora borealis in the sky
+- 🍪 Dancing gingerbread crowd
+
+---
+
+## 🚀 Quick Start
+
+### Try Locally (Frontend Only)
+
+Experience the 3D starfield in under 30 seconds:
+
+```bash
+git clone https://github.com/erictung1999/echo-tree.git
+cd echo-tree/app
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) and start creating memories!
+
+> 💡 **Note**: Without a backend, cards are stored in localStorage only. For full functionality with cloud persistence, see [Deployment](#-deployment).
+
+### Full Stack Development
+
+To run with the complete backend:
+
+```bash
+# 1. Set up frontend
+cd app
+cp .env.example .env
+# Edit .env with your API endpoint
+npm install
+npm run dev
+
+# 2. Deploy backend (requires AWS CLI & Terraform)
+cd ../terraform
+terraform init
+terraform apply
 ```
 
 ---
 
-## 🚀 Deployment Guide: A Detailed Step-by-Step Walkthrough
+## 🏛️ Architecture
 
-This guide is designed for everyone, especially junior developers, to understand and execute the deployment of this project. We'll go through each step in detail.
+Echo Tree follows the **[12-Factor App](https://12factor.net/)** methodology with a **Serverless-first** approach.
 
-### Phase 3: Connecting the Frontend and Going Live
+### System Overview
 
-#### Step 3.1: Configure the Frontend Environment
+```mermaid
+graph TD
+    subgraph "Client Layer"
+        A[React + Three.js App]
+    end
 
-1.  Move into the frontend folder:
-    ```bash
-    cd app
-    ```
-2.  Copy the sample environment file and create your local `.env`:
-    ```bash
-    cp .env.example .env
-    ```
-3.  Edit `.env` and set `VITE_API_BASE_URL` to the base URL from your Terraform output (no trailing slash). Example:
-    ```
-    VITE_API_BASE_URL=https://xxxx.execute-api.us-east-1.amazonaws.com/v1
-    ```
-    The React app automatically appends `/cards`, so you never need to hardcode the endpoint.
-4.  Keep `.env` out of Git (it is already ignored) and point teammates to `.env.example` whenever they need to configure their own machines.
+    subgraph "CDN Layer"
+        B[CloudFront]
+    end
 
-#### Step 3.2: Test Locally and Push
+    subgraph "API Layer"
+        C[API Gateway]
+        D[Lambda Function]
+    end
 
-1.  (Recommended) Verify the connection locally from the `app` directory:
-    ```bash
-    npm install
-    npm run dev
-    ```
-    When you're done testing, stop the dev server with `Ctrl+C` and return to the repo root: `cd ..`.
-2.  Commit any pending work (docs, UI tweaks, etc.) and push to `main` to trigger the pipeline:
-    ```bash
-    git add .
-    git commit -m "feat: hook up API via env"
-    git push origin main
-    ```
-3.  **Open the "Actions" tab** in GitHub to watch the workflow. It will:
-    *   Build the React app and upload it to S3.
-    *   Package and deploy the Lambda API.
-    *   Run `terraform apply` for infrastructure drift.
-    *   Invalidate the CloudFront cache.
-4.  After the run succeeds (green checkmark), open the `cloudfront_domain_name` from your Terraform outputs and confirm the cards load from the live API.
+    subgraph "Data Layer"
+        E[(DynamoDB)]
+    end
 
-**Congratulations! Your application is now live, fully automated, and running on a modern serverless stack.** Any future `git push` to the `main` branch will automatically update it.
+    subgraph "CI/CD"
+        F[GitHub Actions]
+        G[Terraform]
+    end
 
-1.  In **IAM**, go to `Roles` on the left menu and click `Create role`.
-2.  For **Trusted entity type**, select `Web identity`.
-3.  Under "Web identity", choose the `token.actions.githubusercontent.com` provider you just created.
-4.  For **Audience**, choose `sts.amazonaws.com`.
-5.  For **GitHub organization/repository**, enter your details.
-    *   **Organization**: Your GitHub username.
-    *   **Repository**: `echo-tree`
-    *   **Branch (optional but recommended)**: `main`
-6.  Click `Next`.
-7.  On the "Add permissions" page, check the box for `AdministratorAccess`.
-8.  Click `Next`.
-9.  Give the role a name, like `github-actions-echo-tree-role`.
-10. Review the details and click `Create role`.
-11. **ACTION**: Click on the role you just created and **copy its ARN**. It will look like `arn:aws:iam::123456789012:role/github-actions-echo-tree-role`.
+    A -->|HTTPS| B
+    B -->|Static Assets| H[(S3 Bucket)]
+    B -->|/cards API| C
+    C --> D
+    D --> E
+    
+    F -->|Deploy| B
+    F -->|Deploy| D
+    G -->|Provision| C
+    G -->|Provision| E
+```
 
-#### Step 2.3: Configure GitHub Secrets
+### Tech Stack
 
-Now, let's give our GitHub repository the information it needs to use this role.
+<table>
+<tr>
+<td valign="top" width="33%">
 
-1.  **In your forked GitHub repository**, go to `Settings > Secrets and variables > Actions`.
-2.  Switch to the `Secrets` tab and click `New repository secret` for each of the following:
-    *   `AWS_IAM_ROLE_ARN`: Paste the **Role ARN** you copied in the previous step.
-    *   `S3_BUCKET_NAME`: Paste the `s3_bucket_name` value from your Terraform output.
-    *   `CLOUDFRONT_DISTRIBUTION_ID`: Paste the `cloudfront_distribution_id` from your Terraform output.
+#### Frontend
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Three.js](https://img.shields.io/badge/Three.js-r170-000000?logo=three.js&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
+
+- **React Three Fiber** for declarative 3D
+- **Drei** for Three.js helpers
+- **Transformers.js** for client-side AI
+
+</td>
+<td valign="top" width="33%">
+
+#### Backend
+![AWS Lambda](https://img.shields.io/badge/Lambda-Node.js_18-FF9900?logo=awslambda&logoColor=white)
+![DynamoDB](https://img.shields.io/badge/DynamoDB-NoSQL-4053D6?logo=amazondynamodb&logoColor=white)
+![API Gateway](https://img.shields.io/badge/API_Gateway-REST-FF4F8B?logo=amazonapigateway&logoColor=white)
+
+- **Express.js** wrapped with serverless-http
+- **UUID** for card IDs
+- **GSI** for event-based queries
+
+</td>
+<td valign="top" width="33%">
+
+#### Infrastructure
+![Terraform](https://img.shields.io/badge/Terraform-1.5+-844FBA?logo=terraform&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=githubactions&logoColor=white)
+![CloudFront](https://img.shields.io/badge/CloudFront-CDN-8C4FFF?logo=amazonaws&logoColor=white)
+
+- **S3** for static hosting
+- **OIDC** for secure AWS auth
+- **IaC** — No console clicking!
+
+</td>
+</tr>
+</table>
+
+### Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| **InstancedMesh for cards** | Render 100+ cards with a single draw call for 60fps performance |
+| **Web Worker for AI** | Non-blocking sentiment analysis keeps UI responsive |
+| **DynamoDB GSI** | Efficient queries by `eventCode` for group/event filtering |
+| **Environment-driven config** | Zero hardcoded URLs; works across dev/staging/prod |
+| **OIDC for CI/CD** | No long-lived AWS credentials in GitHub secrets |
+
+> 📖 For detailed architecture decisions, see [ADR.md](ADR.md)
 
 ---
 
-### Phase 3: Connecting the Frontend and Going Live
+## 🚢 Deployment
 
-The final step is to tell our React app where to find its API.
+### Prerequisites
 
-#### Step 3.1: Update the Frontend Code
+- AWS Account with appropriate permissions
+- Terraform >= 1.5.0
+- Node.js >= 22
+- GitHub repository (for CI/CD)
 
-1.  In your code editor, open the file `app/src/App.jsx`.
-2.  Find the `useEffect` hook that currently loads static `seedCardsData`. We need to replace this with a real API call.
-3.  Use the `api_gateway_invoke_url` from your Terraform output to construct the full API endpoint URL. It should look like `https://xxxx.execute-api.us-east-1.amazonaws.com/v1/cards`.
+### Step 1: Infrastructure Setup
 
-    ```javascript
-    // In app/src/App.jsx
+```bash
+cd terraform
+terraform init
+terraform apply
+```
 
-    // ... inside the App component ...
+Save the outputs — you'll need `api_gateway_invoke_url`, `s3_bucket_name`, and `cloudfront_distribution_id`.
 
-    const API_URL = "PASTE_YOUR_API_GATEWAY_INVOKE_URL_HERE/cards";
+### Step 2: Configure GitHub Secrets
 
-    // Replace the existing useEffect that loads seedCardsData
-    useEffect(() => {
-      const fetchAllCards = async () => {
-        try {
-          const response = await fetch(API_URL);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const fetchedCards = await response.json();
-          // Process fetched cards (e.g., create THREE.Color objects)
-          const processedCards = fetchedCards.map(card => ({
-            ...card,
-            position: [
-              (Math.random() - 0.5) * 20,
-              (Math.random() - 0.5) * 10,
-              (Math.random() - 0.5) * 15,
-            ],
-            colorObj: new THREE.Color(card.color),
-          }));
-          setUserCards(processedCards);
-        } catch (error) {
-          console.error("Failed to fetch cards:", error);
-          // Keep showing seed data as a fallback
-        }
-      };
+In your repo settings, add these secrets:
 
-      fetchAllCards();
-    }, []);
+| Secret | Value |
+|--------|-------|
+| `AWS_IAM_ROLE_ARN` | Your OIDC role ARN |
+| `S3_BUCKET_NAME` | From Terraform output |
+| `CLOUDFRONT_DISTRIBUTION_ID` | From Terraform output |
 
-    // Update the handleCardSubmit function
-    const handleCardSubmit = useCallback(async (newCard) => {
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newCard),
-        });
-        if (!response.ok) throw new Error('Failed to submit card');
-        
-        const savedCard = await response.json();
-        // Add the new card to the scene
-        const cardWithPosition = {
-          ...savedCard,
-          position: [
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 15 - 2,
-          ],
-          colorObj: new THREE.Color(savedCard.color),
-        };
-        setUserCards(prev => [...prev, cardWithPosition]);
-        setMeteorTrigger(prev => prev + 1);
-      } catch (error) {
-        console.error("Submit error:", error);
-      }
-    }, []);
+### Step 3: Configure Frontend
 
-    // ... rest of the component
-    ```
+```bash
+cd app
+cp .env.example .env
+# Edit .env with VITE_API_BASE_URL from Terraform output
+```
 
-#### Step 3.2: The Final Push
+### Step 4: Deploy
 
-This is the moment of truth.
+```bash
+git add .
+git commit -m "Configure deployment"
+git push origin main
+```
 
-1.  Save the changes to `app/src/App.jsx`.
-2.  In your terminal, commit and push the changes:
-    ```bash
-    git add app/src/App.jsx
-    git commit -m "feat: connect frontend to live API"
-    git push origin main
-    ```
-3.  **Go to the "Actions" tab** in your GitHub repository. You'll see a new workflow running.
-4.  Click on it to watch the magic happen. The pipeline will:
-    *   Build your React app.
-    *   Upload it to S3.
-    *   Package your API code.
-    *   Run `terraform apply` to deploy the API code.
-    *   Invalidate the CloudFront cache.
-5.  Once the pipeline succeeds (shows a green checkmark), open the `cloudfront_domain_name` in your browser.
+GitHub Actions will automatically:
+1. ✅ Build the React app
+2. ✅ Sync to S3
+3. ✅ Deploy Lambda function
+4. ✅ Invalidate CloudFront cache
 
-**Congratulations! Your application is now live, fully automated, and running on a modern serverless stack.** Any future `git push` to the `main` branch will automatically update it.
+Your app is live! 🎉
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] **WebSocket real-time sync** — See new cards appear instantly
+- [ ] **Multi-language UI** — i18n support beyond just docs
+- [ ] **More Easter eggs** — Seasonal themes (Halloween, New Year)
+- [ ] **Card reactions** — Let viewers send ❤️ to memories
+- [ ] **Export feature** — Download your starfield as a video
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's:
+
+- 🐛 Bug fixes
+- ✨ New features
+- 📝 Documentation improvements
+- 🎨 UI/UX enhancements
+
+### Getting Started
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+### ⭐ If you find Echo Tree useful, please star this repo!
+
+It helps others discover this project and motivates us to keep improving.
+
+<br />
+
+**Built with ❤️ by the Echo Tree team**
+
+</div>
 
