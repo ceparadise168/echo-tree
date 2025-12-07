@@ -1,0 +1,264 @@
+/* CreateGroupModal 樣式 */
+
+.create-group-modal-content {
+  background: linear-gradient(
+    135deg,
+    rgba(20, 20, 40, 0.95) 0%,
+    rgba(30, 30, 60, 0.9) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 
+    0 0 40px rgba(255, 105, 180, 0.2),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 關閉按鈕 */
+.create-group-modal-content .modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-group-modal-content .modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+/* 標題區 */
+.create-group-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.create-group-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.create-group-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(255, 105, 180, 0.3);
+}
+
+/* 表單 */
+.create-group-form {
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #FF69B4;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1);
+}
+
+.form-group input.error {
+  border-color: #EF4444;
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.error-message {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #EF4444;
+}
+
+.input-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* 表單資訊 */
+.form-info {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.form-info p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 8px 0;
+}
+
+.form-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.form-info li {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.form-info li::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: #FF69B4;
+}
+
+/* 按鈕區 */
+.create-group-footer {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-cancel,
+.btn-create {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.btn-create {
+  background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
+  color: #fff;
+}
+
+.btn-create:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 105, 180, 0.4);
+}
+
+.btn-create:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cancel:focus,
+.btn-create:focus {
+  outline: 2px solid #FF69B4;
+  outline-offset: 2px;
+}
+
+.btn-cancel:active,
+.btn-create:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* 提示文字 */
+.create-group-modal-content .modal-hint {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .create-group-modal-content {
+    padding: 24px;
+    max-width: 90%;
+  }
+
+  .create-group-icon {
+    font-size: 40px;
+  }
+
+  .create-group-header h2 {
+    font-size: 20px;
+  }
+
+  .form-group input {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .btn-cancel,
+  .btn-create {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+/* 減少動態偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .create-group-modal-content {
+    animation: none;
+  }
+}

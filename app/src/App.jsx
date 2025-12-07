@@ -13,6 +13,7 @@ import CardForm from './components/CardForm';
 import ControlHints from './components/ControlHints';
 import PresentationMode from './components/PresentationMode';
 import WelcomeModal from './components/WelcomeModal';
+import CreateGroupModal from './components/CreateGroupModal';
 import { ChristmasScene } from './components/ChristmasMode';
 import { ShootingStars } from './components/ShootingStars';
 import { AutoPilotController } from './components/AutoPilotController';
@@ -511,6 +512,7 @@ export default function App() {
   
   // 訪客模式歡迎引導
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   
   useEffect(() => {
     // 僅在訪客模式且未顯示過歡迎訊息時顯示
@@ -518,6 +520,14 @@ export default function App() {
       setShowWelcomeModal(true);
     }
   }, [isGuestMode]);
+  
+  // 建立群組處理
+  const handleCreateGroup = useCallback((customEventCode) => {
+    window.history.pushState({}, '', `?eventCode=${customEventCode}`);
+    setEventCode(customEventCode);
+    setShowCreateGroupModal(false);
+    showToast(`已加入群組：${customEventCode}`, 'success');
+  }, [showToast]);
   
   // Toast 通知系統
   const [toastState, setToastState] = useState({
@@ -894,9 +904,17 @@ export default function App() {
         <WelcomeModal 
           onClose={() => setShowWelcomeModal(false)}
           onCreateGroup={() => {
-            // 稍後實作 CreateGroupModal
-            showToast('建立群組功能即將推出', 'success');
+            setShowWelcomeModal(false);
+            setShowCreateGroupModal(true);
           }}
+        />
+      )}
+      
+      {/* 建立/加入群組模態框 */}
+      {showCreateGroupModal && (
+        <CreateGroupModal
+          onClose={() => setShowCreateGroupModal(false)}
+          onCreate={handleCreateGroup}
         />
       )}
       
