@@ -34,6 +34,17 @@ const normalizeApiBaseUrl = (value) => {
   return value.replace(/\/+$/, '');
 };
 
+// 驗證和正規化 eventCode
+const normalizeEventCode = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  // 3-50 字元，僅允許英文、數字、底線、連字號
+  if (/^[a-zA-Z0-9_-]{3,50}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
+};
+
 const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 const generateCardPosition = () => ([
@@ -457,6 +468,34 @@ const KeyboardController = ({ prefersReducedMotion }) => {
 
 // 5. 用於渲染場景的主應用
 export default function App() {
+  // URL 參數解析與模式管理
+  const [eventCode, setEventCode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return normalizeEventCode(params.get('eventCode'));
+  });
+  const isGuestMode = eventCode === null;
+
+  // 監聽 URL 變化（支援瀏覽器前後退）
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      setEventCode(normalizeEventCode(params.get('eventCode')));
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
+  // 返回私人星空（訪客模式）
+  const handleReturnToGuestMode = useCallback(() => {
+    const confirmed = window.confirm(
+      '確定要返回私人星空嗎？\n\n返回後將看到您的本地卡片，群組卡片將不再顯示。'
+    );
+    if (confirmed) {
+      window.history.pushState({}, '', window.location.pathname);
+      setEventCode(null);
+    }
+  }, []);
+
   const [selectedCard, setSelectedCard] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [autoPilotFocusedCard, setAutoPilotFocusedCard] = useState(null);
@@ -469,9 +508,11 @@ export default function App() {
   const [isAutoPilot, setIsAutoPilot] = useState(false);
   const [meteorTrigger, setMeteorTrigger] = useState(0);
   const [userCards, setUserCards] = useState(() => {
+    // 根據模式使用不同的 localStorage key
+    const storageKey = isGuestMode ? 'echoTree_userCards' : `echoTree_userCards_${eventCode}`;
     // 從 localStorage 讀取已儲存的卡片
     try {
-      const saved = localStorage.getItem('echoTree_userCards');
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         return parsed.map((card, idx) => createDisplayCard(card, typeof card.index === 'number' ? card.index : SEED_CARD_COUNT + idx));
@@ -483,17 +524,24 @@ export default function App() {
   });
   const apiBaseUrl = API_BASE_URL;
   
-  // 儲存卡片到 localStorage
+  // 儲存卡片到 localStorage（根據模式使用不同的 key）
   useEffect(() => {
+    const storageKey = isGuestMode ? 'echoTree_userCards' : `echoTree_userCards_${eventCode}`;
     try {
       const toSave = userCards.map(({ colorObj, ...rest }) => rest);
-      localStorage.setItem('echoTree_userCards', JSON.stringify(toSave));
+      localStorage.setItem(storageKey, JSON.stringify(toSave));
     } catch (e) {
       console.error('Failed to save cards to localStorage:', e);
     }
-  }, [userCards]);
+  }, [userCards, isGuestMode, eventCode]);
 
   useEffect(() => {
+    // 訪客模式：不呼叫 API，僅使用 localStorage
+    if (isGuestMode) {
+      return;
+    }
+
+    // 群組模式：需要 API 支援
     if (!apiBaseUrl) {
       console.warn('VITE_API_BASE_URL 尚未設定，無法同步遠端卡片。');
       return;
@@ -504,7 +552,7 @@ export default function App() {
 
     const syncCardsFromApi = async () => {
       try {
-        const response = await fetch(`${apiBaseUrl}/cards`, { signal: controller.signal });
+        const response = await fetch(`${apiBaseUrl}/cards?eventCode=${eventCode}`, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`Failed to fetch cards. Status: ${response.status}`);
         }
@@ -528,7 +576,7 @@ export default function App() {
       isActive = false;
       controller.abort();
     };
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, isGuestMode, eventCode]);
   
   // 裝置偵測
   const { isMobile, hasGyroscope, prefersReducedMotion } = useDeviceDetect();
@@ -644,6 +692,28 @@ export default function App() {
   
   // 處理新卡片提交
   const handleCardSubmit = useCallback(async (newCard) => {
+    // 訪客模式：僅更新本地 state，不打 API
+    if (isGuestMode) {
+      setUserCards((prev) => {
+        const nextIndex = SEED_CARD_COUNT + prev.length;
+        const cardForDisplay = createDisplayCard({
+          cardId: `local-${Date.now()}-${Math.random()}`,
+          memory: newCard.memory,
+          recipient: newCard.recipient || '',
+          authorName: newCard.authorName || 'Anonymous',
+          color: newCard.color,
+          date: newCard.date || new Date().toISOString().split('T')[0],
+          index: nextIndex,
+          isUserCreated: true,
+        }, nextIndex);
+        return [...prev, cardForDisplay];
+      });
+      setMeteorTrigger(prev => prev + 1);
+      triggerHapticFeedback([50, 30, 50]);
+      return { success: true, mode: 'guest' };
+    }
+
+    // 群組模式：呼叫 API
     if (!apiBaseUrl) {
       const message = 'VITE_API_BASE_URL 尚未設定，無法送出記憶。';
       console.warn(message);
@@ -661,6 +731,7 @@ export default function App() {
         authorName: newCard.authorName || undefined,
         color: newCard.color,
         date: newCard.date,
+        eventCode,
       }),
     });
 
@@ -684,7 +755,7 @@ export default function App() {
     triggerHapticFeedback([50, 30, 50]);
 
     return savedCard;
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, isGuestMode, eventCode]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#050510' }}>
