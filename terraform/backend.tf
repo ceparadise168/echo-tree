@@ -93,7 +93,7 @@ resource "aws_lambda_function" "cards_api_lambda" {
 
   source_code_hash = filebase64sha256("${path.module}/../api.zip") # Detects changes in deployment package
 
-  runtime = "nodejs18.x"
+  runtime = "nodejs20.x"
 
   environment {
     variables = {
