@@ -521,6 +521,104 @@
   margin: 0;
 }
 
+/* AI 心情分析按鈕 */
+.ai-button {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(138, 43, 226, 0.2));
+  cursor: pointer;
+  transition: var(--transition-base);
+  position: relative;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.ai-button:hover:not(:disabled) {
+  transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  border-color: rgba(255, 215, 0, 0.8);
+}
+
+.ai-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-button.analyzing {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+/* AI 狀態顯示區域 */
+.ai-status {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.ai-status.preloading {
+  background: rgba(138, 43, 226, 0.15);
+  color: rgba(138, 43, 226, 1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+}
+
+.ai-status.loading {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.ai-status.error {
+  background: rgba(255, 107, 107, 0.15);
+  color: #FF6B6B;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+/* 心情徽章 */
+.mood-badge {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  text-align: center;
+  animation: fadeIn 0.4s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* 響應式設計 */
 @media (max-width: 480px) {
   .form-content {

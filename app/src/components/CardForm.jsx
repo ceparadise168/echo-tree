@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './CardForm.css';
+import { analyzeMood, preloadModel } from '../utils/moodAnalyzer';
 
 /**
  * 卡片填寫表單元件
@@ -25,6 +26,13 @@ export default function CardForm({ onSubmit, onClose }) {
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0].color);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // AI 心情分析狀態
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [hasManuallySelected, setHasManuallySelected] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [isModelPreloading, setIsModelPreloading] = useState(false);
 
   // ESC 鍵關閉
   const handleKeyDown = useCallback((e) => {
@@ -32,6 +40,26 @@ export default function CardForm({ onSubmit, onClose }) {
       onClose();
     }
   }, [onClose]);
+
+  // 背景預載入 AI 模型（當用戶輸入 10 字元以上時）
+  useEffect(() => {
+    if (memory.trim().length >= 10 && !isModelPreloading) {
+      const timer = setTimeout(() => {
+        setIsModelPreloading(true);
+        preloadModel()
+          .then(() => {
+            console.log('✅ AI 模型預載入完成');
+            setIsModelPreloading(false);
+          })
+          .catch((error) => {
+            console.warn('⚠️ AI 模型預載入失敗:', error);
+            setIsModelPreloading(false);
+          });
+      }, 2000); // 2 秒 debounce
+
+      return () => clearTimeout(timer);
+    }
+  }, [memory, isModelPreloading]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -67,6 +95,61 @@ export default function CardForm({ onSubmit, onClose }) {
       console.error('Failed to submit card from form:', submitError);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // AI 心情分析
+  const handleAiAnalysis = async () => {
+    const trimmedMemory = memory.trim();
+    
+    // 驗證輸入
+    if (trimmedMemory.length < 5) {
+      setAiError('請先寫下至少 5 個字的記憶內容');
+      setTimeout(() => setAiError(null), 3000);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAiError(null);
+
+    try {
+      const result = await analyzeMood(trimmedMemory);
+
+      if (result.error) {
+        // 雖然有錯誤但有降級方案，仍然應用顏色
+        setAiError(result.message);
+        setTimeout(() => setAiError(null), 3000);
+        
+        if (result.color) {
+          setSelectedColor(result.color);
+          setAiSuggestion({
+            color: result.color,
+            mood: result.mood,
+            emoji: result.emoji
+          });
+        }
+      } else {
+        // 成功分析
+        setSelectedColor(result.color);
+        setAiSuggestion({
+          color: result.color,
+          mood: result.mood,
+          emoji: result.emoji
+        });
+        setHasManuallySelected(false);
+
+        // 震動回饋
+        if (navigator.vibrate) {
+          navigator.vibrate([50, 30, 50]);
+        }
+      }
+    } catch (error) {
+      console.error('AI 分析未預期錯誤:', error);
+      setAiError('AI 暫時無法使用，已為你選擇預設顏色');
+      setTimeout(() => setAiError(null), 3000);
+      setSelectedColor(PRESET_COLORS[0].color);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -209,11 +292,26 @@ export default function CardForm({ onSubmit, onClose }) {
                   type="button"
                   className={`color-preset-btn ${selectedColor === preset.color ? 'selected' : ''}`}
                   style={{ backgroundColor: preset.color }}
-                  onClick={() => setSelectedColor(preset.color)}
+                  onClick={() => {
+                    setSelectedColor(preset.color);
+                    setHasManuallySelected(true);
+                  }}
                   title={preset.name}
                   aria-label={`選擇${preset.name}`}
                 />
               ))}
+              
+              {/* AI 心情分析按鈕 */}
+              <button
+                type="button"
+                className={`ai-button ${isAnalyzing ? 'analyzing' : ''}`}
+                onClick={handleAiAnalysis}
+                disabled={isAnalyzing || isSubmitting}
+                title="AI 會根據文字情緒推薦顏色"
+                aria-label="AI 心情分析"
+              >
+                ✨
+              </button>
             </div>
             
             {/* 進階顏色選擇器 */}
@@ -232,6 +330,31 @@ export default function CardForm({ onSubmit, onClose }) {
                   <div className="hue-preview" style={{ backgroundColor: selectedColor }} />
                 </div>
                 <p className="color-picker-hint">拖曳滑桿選擇更多色階</p>
+              </div>
+            )}
+
+            {/* AI 狀態顯示區域 */}
+            {isModelPreloading && (
+              <div className="ai-status preloading">
+                🔮 AI 正在準備中...
+              </div>
+            )}
+
+            {isAnalyzing && (
+              <div className="ai-status loading">
+                ⏳ AI 正在分析你的心情...
+              </div>
+            )}
+
+            {aiError && (
+              <div className="ai-status error">
+                ❌ {aiError}
+              </div>
+            )}
+
+            {aiSuggestion && !hasManuallySelected && (
+              <div className="mood-badge">
+                {aiSuggestion.emoji} {aiSuggestion.mood}
               </div>
             )}
           </div>
