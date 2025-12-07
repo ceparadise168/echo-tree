@@ -12,6 +12,17 @@ resource "aws_dynamodb_table" "cards_table" {
     type = "S"
   }
 
+  attribute {
+    name = "eventCode"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "EventCodeIndex"
+    hash_key        = "eventCode"
+    projection_type = "ALL"
+  }
+
   tags = {
     Project   = var.project_name
     ManagedBy = "Terraform"
@@ -40,12 +51,16 @@ data "aws_iam_policy_document" "lambda_dynamodb_policy" {
   statement {
     actions = [
       "dynamodb:Scan",
+      "dynamodb:Query",
       "dynamodb:GetItem",
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem"
     ]
-    resources = [aws_dynamodb_table.cards_table.arn]
+    resources = [
+      aws_dynamodb_table.cards_table.arn,
+      "${aws_dynamodb_table.cards_table.arn}/index/*"
+    ]
   }
 }
 
@@ -183,6 +198,12 @@ resource "aws_api_gateway_stage" "api_stage" {
   deployment_id = aws_api_gateway_deployment.api_deployment.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "v1"
+
+  # 基礎速率限制保護帳單
+  throttle_settings {
+    rate_limit  = 50
+    burst_limit = 100
+  }
 }
 
 # Lambda permission to be invoked by API Gateway
