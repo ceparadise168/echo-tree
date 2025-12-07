@@ -29,3 +29,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 api.zip
+
+# Dependencies
+node_modules/
