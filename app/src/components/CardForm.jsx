@@ -41,25 +41,24 @@ export default function CardForm({ onSubmit, onClose }) {
     }
   }, [onClose]);
 
-  // 背景預載入 AI 模型（當用戶輸入 10 字元以上時）
+  // 表單打開時立即開始背景預載入 AI 模型，優化使用者體驗
   useEffect(() => {
-    if (memory.trim().length >= 10 && !isModelPreloading) {
-      const timer = setTimeout(() => {
-        setIsModelPreloading(true);
-        preloadModel()
-          .then(() => {
-            console.log('✅ AI 模型預載入完成');
-            setIsModelPreloading(false);
-          })
-          .catch((error) => {
-            console.warn('⚠️ AI 模型預載入失敗:', error);
-            setIsModelPreloading(false);
-          });
-      }, 2000); // 2 秒 debounce
+    // 延遲 500ms 後開始預載入，避免阻塞表單渲染
+    const timer = setTimeout(() => {
+      setIsModelPreloading(true);
+      preloadModel()
+        .then(() => {
+          console.log('✅ AI 模型預載入完成');
+          setIsModelPreloading(false);
+        })
+        .catch((error) => {
+          console.warn('⚠️ AI 模型預載入失敗:', error);
+          setIsModelPreloading(false);
+        });
+    }, 500);
 
-      return () => clearTimeout(timer);
-    }
-  }, [memory, isModelPreloading]);
+    return () => clearTimeout(timer);
+  }, []); // 只在組件掛載時執行一次
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
