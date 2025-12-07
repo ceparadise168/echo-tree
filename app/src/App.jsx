@@ -12,6 +12,7 @@ import CardModal from './components/CardModal';
 import CardForm from './components/CardForm';
 import ControlHints from './components/ControlHints';
 import PresentationMode from './components/PresentationMode';
+import WelcomeModal from './components/WelcomeModal';
 import { ChristmasScene } from './components/ChristmasMode';
 import { ShootingStars } from './components/ShootingStars';
 import { AutoPilotController } from './components/AutoPilotController';
@@ -507,6 +508,32 @@ export default function App() {
   const [showPresentationMode, setShowPresentationMode] = useState(false);
   const [isAutoPilot, setIsAutoPilot] = useState(false);
   const [meteorTrigger, setMeteorTrigger] = useState(0);
+  
+  // 訪客模式歡迎引導
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  
+  useEffect(() => {
+    // 僅在訪客模式且未顯示過歡迎訊息時顯示
+    if (isGuestMode && !localStorage.getItem('echoTree_welcomed')) {
+      setShowWelcomeModal(true);
+    }
+  }, [isGuestMode]);
+  
+  // Toast 通知系統
+  const [toastState, setToastState] = useState({
+    visible: false,
+    message: '',
+    type: 'success', // 'success' | 'error'
+  });
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToastState({ visible: true, message, type });
+    const duration = type === 'success' ? 2000 : 4000;
+    setTimeout(() => {
+      setToastState(prev => ({ ...prev, visible: false }));
+    }, duration);
+  }, []);
+
   const [userCards, setUserCards] = useState(() => {
     // 根據模式使用不同的 localStorage key
     const storageKey = isGuestMode ? 'echoTree_userCards' : `echoTree_userCards_${eventCode}`;
@@ -862,6 +889,17 @@ export default function App() {
         />
       )}
       
+      {/* 訪客模式歡迎引導 */}
+      {showWelcomeModal && (
+        <WelcomeModal 
+          onClose={() => setShowWelcomeModal(false)}
+          onCreateGroup={() => {
+            // 稍後實作 CreateGroupModal
+            showToast('建立群組功能即將推出', 'success');
+          }}
+        />
+      )}
+      
       {/* 大螢幕展示模式 */}
       {showPresentationMode && (
         <PresentationMode 
@@ -908,6 +946,13 @@ export default function App() {
           prefersReducedMotion={prefersReducedMotion}
           onClose={resetChristmasMode}
         />
+      )}
+
+      {/* Toast 通知 */}
+      {toastState.visible && (
+        <div className={`toast toast-${toastState.type}`}>
+          {toastState.message}
+        </div>
       )}
     </div>
   );
