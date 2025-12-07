@@ -599,7 +599,20 @@ export default function App() {
           throw new Error('Cards API 回傳格式錯誤，預期為陣列。');
         }
         if (!isActive) return;
-        setUserCards(data.map((card, idx) => createDisplayCard({ ...card }, SEED_CARD_COUNT + idx)));
+        
+        // 比對現有卡片，只新增不存在的卡片（避免重複渲染）
+        setUserCards(prevCards => {
+          const existingIds = new Set(prevCards.map(c => c.cardId));
+          const newCards = data
+            .filter(card => !existingIds.has(card.cardId))
+            .map((card, idx) => createDisplayCard({ ...card }, SEED_CARD_COUNT + prevCards.length + idx));
+          
+          if (newCards.length > 0) {
+            console.log(`同步 ${newCards.length} 張新卡片`);
+            return [...prevCards, ...newCards];
+          }
+          return prevCards;
+        });
       } catch (error) {
         if (error.name === 'AbortError') {
           return;
@@ -608,11 +621,16 @@ export default function App() {
       }
     };
 
+    // 初次載入立即同步
     syncCardsFromApi();
+
+    // 每 30 秒輪詢一次新卡片
+    const pollingInterval = setInterval(syncCardsFromApi, 30000);
 
     return () => {
       isActive = false;
       controller.abort();
+      clearInterval(pollingInterval);
     };
   }, [apiBaseUrl, isGuestMode, eventCode]);
   
