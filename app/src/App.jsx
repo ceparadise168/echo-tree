@@ -14,6 +14,7 @@ import ControlHints from './components/ControlHints';
 import PresentationMode from './components/PresentationMode';
 import WelcomeModal from './components/WelcomeModal';
 import CreateGroupModal from './components/CreateGroupModal';
+import EventModeIndicator from './components/EventModeIndicator';
 import { ChristmasScene } from './components/ChristmasMode';
 import { ShootingStars } from './components/ShootingStars';
 import { AutoPilotController } from './components/AutoPilotController';
@@ -881,6 +882,15 @@ export default function App() {
         onTogglePresentationMode={handleTogglePresentationMode}
         isAutoPilot={isAutoPilot}
         onToggleAutoPilot={handleToggleAutoPilot}
+      />
+      
+      {/* 群組模式指示器 */}
+      <EventModeIndicator
+        isGuestMode={isGuestMode}
+        eventCode={eventCode}
+        onCreateGroup={() => setShowCreateGroupModal(true)}
+        onReturnToGuestMode={handleReturnToGuestMode}
+        onShowToast={showToast}
       />
       
       {/* 卡片填寫表單 */}

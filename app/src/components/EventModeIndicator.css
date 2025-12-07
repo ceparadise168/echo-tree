@@ -1,0 +1,193 @@
+/* EventModeIndicator 樣式 - 定位於右上角 */
+
+.event-mode-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(20, 20, 40, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 900;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 模式資訊 */
+.mode-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-icon {
+  font-size: 20px;
+}
+
+.mode-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 操作按鈕區 */
+.mode-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 按鈕共用樣式 */
+.btn-create-group,
+.btn-copy-link,
+.btn-return-guest {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* 建立群組按鈕 (訪客模式) */
+.btn-create-group {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #000;
+}
+
+.btn-create-group:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+/* 複製連結按鈕 */
+.btn-copy-link {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 32px;
+  padding: 6px 10px;
+}
+
+.btn-copy-link:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.btn-copy-link.copied {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #22C55E;
+}
+
+.btn-copy-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* 返回私人星空按鈕 */
+.btn-return-guest {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 32px;
+  padding: 6px 10px;
+}
+
+.btn-return-guest:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 焦點樣式 */
+.btn-create-group:focus,
+.btn-copy-link:focus,
+.btn-return-guest:focus {
+  outline: 2px solid rgba(255, 215, 0, 0.5);
+  outline-offset: 2px;
+}
+
+/* 按下效果 */
+.btn-create-group:active,
+.btn-copy-link:active:not(:disabled),
+.btn-return-guest:active {
+  transform: translateY(0);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .event-mode-indicator {
+    top: 15px;
+    right: 15px;
+    padding: 10px 14px;
+    gap: 10px;
+    max-width: calc(100vw - 30px);
+  }
+
+  .mode-icon {
+    font-size: 18px;
+  }
+
+  .mode-text {
+    font-size: 13px;
+    max-width: 120px;
+  }
+
+  .btn-create-group,
+  .btn-copy-link,
+  .btn-return-guest {
+    padding: 5px 10px;
+    font-size: 12px;
+    min-width: 28px;
+  }
+
+  .mode-actions {
+    gap: 6px;
+  }
+}
+
+/* 小螢幕優化 */
+@media (max-width: 480px) {
+  .mode-text {
+    max-width: 100px;
+  }
+}
+
+/* 減少動態偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .event-mode-indicator {
+    animation: none;
+  }
+  
+  .btn-create-group:hover,
+  .btn-copy-link:hover,
+  .btn-return-guest:hover {
+    transform: none;
+  }
+  
+  .btn-create-group:active,
+  .btn-copy-link:active,
+  .btn-return-guest:active {
+    transform: none;
+  }
+}
