@@ -5,9 +5,9 @@
 ### チームの思い出を星空に輝く星座へ
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/erictung1999/echo-tree)](https://github.com/erictung1999/echo-tree/issues)
+[![GitHub stars](https://img.shields.io/github/stars/ceparadise168/echo-tree?style=social)](https://github.com/ceparadise168/echo-tree/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/ceparadise168/echo-tree?style=social)](https://github.com/ceparadise168/echo-tree/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/ceparadise168/echo-tree)](https://github.com/ceparadise168/echo-tree/issues)
 
 [English](README.md) · [繁體中文](README.zh-tw.md) · **[日本語](README.ja.md)**
 
@@ -92,7 +92,7 @@ Echo Tree は**インタラクティブな 3D メモリーコレクションア�
 30秒で 3D 星空を体験：
 
 ```bash
-git clone https://github.com/erictung1999/echo-tree.git
+git clone https://github.com/ceparadise168/echo-tree.git
 cd echo-tree/app
 npm install
 npm run dev
@@ -223,14 +223,40 @@ graph TD
 
 ## 🚢 デプロイ
 
+このガイドでは、AWS のセットアップ、GitHub Actions の設定、本番環境へのデプロイまで、Echo Tree をゼロからデプロイする方法を説明します。
+
 ### 前提条件
 
 - 適切な権限を持つ AWS アカウント
 - Terraform >= 1.5.0
 - Node.js >= 22
-- GitHub リポジトリ（CI/CD 用）
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) のインストールと設定
+- GitHub リポジトリ（このプロジェクトをフォーク）
 
-### ステップ 1: インフラストラクチャのセットアップ
+---
+
+### フェーズ 1: ローカル環境と初期インフラストラクチャ
+
+#### Step 1.1: リポジトリのクローン
+
+```bash
+git clone https://github.com/YOUR_USERNAME/echo-tree.git
+cd echo-tree
+```
+
+#### Step 1.2: AWS CLI の設定
+
+1. [AWS コンソール](https://console.aws.amazon.com/) にログインし、**IAM** に移動します。
+2. 新しいユーザー（例: `echo-tree-local-admin`）を作成し、`AdministratorAccess` ポリシーを付与します。
+3. ユーザーの **Security credentials** タブでアクセスキーを作成します。
+4. `Access key ID` と `Secret access key` をすぐに保存します。
+5. ターミナルで実行：
+   ```bash
+   aws configure
+   ```
+   アクセスキー、シークレットキー、デフォルトリージョン（例: `us-east-1`）を入力します。
+
+#### Step 1.3: Terraform でインフラをデプロイ
 
 ```bash
 cd terraform
@@ -238,41 +264,109 @@ terraform init
 terraform apply
 ```
 
-出力値を保存してください — `api_gateway_invoke_url`、`s3_bucket_name`、`cloudfront_distribution_id` が必要です。
+`yes` で確認後、リソースが作成されるのを待ちます。**出力値を保存**：
+- `cloudfront_domain_name`
+- `s3_bucket_name`
+- `api_gateway_invoke_url`
+- `cloudfront_distribution_id`
 
-### ステップ 2: GitHub Secrets の設定
+---
 
-リポジトリ設定で以下の Secrets を追加：
+### フェーズ 2: GitHub Actions と AWS の連携（OIDC）
+
+このセットアップでは、GitHub Actions と AWS 間でセキュアなキーレス認証を行う OpenID Connect (OIDC) を使用します。
+
+#### Step 2.1: AWS で OIDC Identity Provider を作成
+
+1. IAM で **Identity providers** → **Add provider** に移動します。
+2. `OpenID Connect` を選択します。
+3. 以下を入力：
+   - **Provider URL**: `https://token.actions.githubusercontent.com`
+   - **Audience**: `sts.amazonaws.com`
+4. **Add provider** をクリックします。
+
+#### Step 2.2: GitHub Actions 用 IAM ロールを作成
+
+1. IAM で **Roles** → **Create role** に移動します。
+2. 信頼されたエンティティタイプとして **Web identity** を選択します。
+3. 作成した `token.actions.githubusercontent.com` プロバイダーを選択します。
+4. **Audience** で `sts.amazonaws.com` を選択します。
+5. GitHub アクセスを設定：
+   - **Organization**: GitHub ユーザー名
+   - **Repository**: `echo-tree`
+   - **Branch**（推奨）: `main`
+6. **Next** をクリックします。
+7. `AdministratorAccess` ポリシーをアタッチ（またはより制限的なカスタムポリシーを作成）。
+8. ロール名（例: `github-actions-echo-tree-role`）を付けて作成します。
+9. **Role ARN をコピー** — `arn:aws:iam::123456789012:role/github-actions-echo-tree-role` のような形式です。
+
+#### Step 2.3: GitHub Secrets の設定
+
+GitHub リポジトリで **Settings → Secrets and variables → Actions** に移動し、以下を追加：
 
 | Secret | 値 |
 |--------|------|
-| `AWS_IAM_ROLE_ARN` | OIDC ロール ARN |
+| `AWS_IAM_ROLE_ARN` | Step 2.2 の Role ARN |
 | `S3_BUCKET_NAME` | Terraform 出力値 |
 | `CLOUDFRONT_DISTRIBUTION_ID` | Terraform 出力値 |
 
-### ステップ 3: フロントエンドの設定
+---
+
+### フェーズ 3: フロントエンドを接続して本番環境へ
+
+#### Step 3.1: フロントエンド環境の設定
 
 ```bash
 cd app
 cp .env.example .env
-# .env を編集し、Terraform 出力の VITE_API_BASE_URL を設定
 ```
 
-### ステップ 4: デプロイ
+`.env` を編集し、API ベース URL を設定（末尾のスラッシュや `/cards` は不要）：
+```
+VITE_API_BASE_URL=https://xxxxx.execute-api.us-east-1.amazonaws.com/v1
+```
+
+React アプリがこの URL に自動的に `/cards` を追加します。
+
+#### Step 3.2: ローカルでテスト
 
 ```bash
+npm install
+npm run dev
+```
+
+接続が正常に動作することを確認し、`Ctrl+C` で停止します。
+
+#### Step 3.3: デプロイ
+
+```bash
+cd ..
 git add .
-git commit -m "Configure deployment"
+git commit -m "feat: configure deployment"
 git push origin main
 ```
 
-GitHub Actions が自動的に：
-1. ✅ React アプリをビルド
-2. ✅ S3 に同期
-3. ✅ Lambda 関数をデプロイ
-4. ✅ CloudFront キャッシュを無効化
+#### Step 3.4: 魔法を見守る
 
-アプリが公開されました！🎉
+GitHub の **Actions** タブに移動します。ワークフローが：
+1. ✅ React アプリをビルド
+2. ✅ 静的ファイルを S3 に同期
+3. ✅ Lambda 関数をパッケージしてデプロイ
+4. ✅ `terraform apply` でインフラを同期
+5. ✅ CloudFront キャッシュを無効化
+
+完了後（緑のチェックマーク）、`cloudfront_domain_name` URL を開く — **アプリが本番稼働中！** 🎉
+
+---
+
+### その後のデプロイ
+
+初期セットアップ後は、`git push origin main` を行うたびに自動的に：
+- フロントエンドの変更をビルドしてデプロイ
+- Lambda コードを更新（変更がある場合）
+- インフラを同期
+
+手動ステップは不要です！
 
 ---
 

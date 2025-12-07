@@ -5,9 +5,9 @@
 ### 將團隊記憶化為星空中的璀璨星光
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/erictung1999/echo-tree)](https://github.com/erictung1999/echo-tree/issues)
+[![GitHub stars](https://img.shields.io/github/stars/ceparadise168/echo-tree?style=social)](https://github.com/ceparadise168/echo-tree/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/ceparadise168/echo-tree?style=social)](https://github.com/ceparadise168/echo-tree/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/ceparadise168/echo-tree)](https://github.com/ceparadise168/echo-tree/issues)
 
 [English](README.md) · **[繁體中文](README.zh-tw.md)** · [日本語](README.ja.md)
 
@@ -92,7 +92,7 @@ Echo Tree 是一款**互動式 3D 記憶收集應用**，團隊成員可以在�
 30 秒內體驗 3D 星空：
 
 ```bash
-git clone https://github.com/erictung1999/echo-tree.git
+git clone https://github.com/ceparadise168/echo-tree.git
 cd echo-tree/app
 npm install
 npm run dev
@@ -223,14 +223,40 @@ graph TD
 
 ## 🚢 部署指南
 
+本指南將帶你從零開始部署 Echo Tree，包含 AWS 設定、GitHub Actions 配置，以及上線流程。
+
 ### 前置需求
 
 - AWS 帳號並具備適當權限
 - Terraform >= 1.5.0
 - Node.js >= 22
-- GitHub 儲存庫（用於 CI/CD）
+- [安裝並設定 AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- GitHub 儲存庫（Fork 本專案）
 
-### 步驟一：基礎設施設定
+---
+
+### 階段一：本機環境與初始基礎設施
+
+#### Step 1.1：複製儲存庫
+
+```bash
+git clone https://github.com/YOUR_USERNAME/echo-tree.git
+cd echo-tree
+```
+
+#### Step 1.2：設定 AWS CLI
+
+1. 登入 [AWS Console](https://console.aws.amazon.com/) 並進入 **IAM** 服務。
+2. 建立新使用者（例如 `echo-tree-local-admin`），賦予 `AdministratorAccess` 權限。
+3. 進入該使用者的 **Security credentials** 分頁，建立 Access Key。
+4. 立即儲存 `Access key ID` 與 `Secret access key`。
+5. 在終端機執行：
+   ```bash
+   aws configure
+   ```
+   輸入存取金鑰、秘密金鑰和預設區域（例如 `us-east-1`）。
+
+#### Step 1.3：使用 Terraform 部署基礎設施
 
 ```bash
 cd terraform
@@ -238,41 +264,109 @@ terraform init
 terraform apply
 ```
 
-記下輸出值 — 你會需要 `api_gateway_invoke_url`、`s3_bucket_name` 和 `cloudfront_distribution_id`。
+確認後輸入 `yes`，等待資源建立完成。**請儲存輸出值**：
+- `cloudfront_domain_name`
+- `s3_bucket_name`
+- `api_gateway_invoke_url`
+- `cloudfront_distribution_id`
 
-### 步驟二：設定 GitHub Secrets
+---
 
-在儲存庫設定中新增以下 Secrets：
+### 階段二：設定 GitHub Actions 與 AWS 連線（OIDC）
+
+此設定使用 OpenID Connect (OIDC) 在 GitHub Actions 與 AWS 之間建立安全的無金鑰認證。
+
+#### Step 2.1：在 AWS 建立 OIDC Identity Provider
+
+1. 在 IAM 中，進入 **Identity providers** → **Add provider**。
+2. 選擇 `OpenID Connect`。
+3. 輸入：
+   - **Provider URL**：`https://token.actions.githubusercontent.com`
+   - **Audience**：`sts.amazonaws.com`
+4. 點擊 **Add provider**。
+
+#### Step 2.2：建立 GitHub Actions 專用 IAM Role
+
+1. 在 IAM 中，進入 **Roles** → **Create role**。
+2. 選擇 **Web identity** 作為受信任實體類型。
+3. 選擇剛建立的 `token.actions.githubusercontent.com` Provider。
+4. **Audience** 選擇 `sts.amazonaws.com`。
+5. 設定 GitHub 存取權限：
+   - **Organization**：你的 GitHub 使用者名稱
+   - **Repository**：`echo-tree`
+   - **Branch**（建議）：`main`
+6. 點擊 **Next**。
+7. 附加 `AdministratorAccess` 權限（或建立更嚴格的自訂權限）。
+8. 命名 Role（例如 `github-actions-echo-tree-role`）並建立。
+9. **複製 Role ARN** — 格式如 `arn:aws:iam::123456789012:role/github-actions-echo-tree-role`。
+
+#### Step 2.3：設定 GitHub Secrets
+
+在 GitHub 儲存庫中，進入 **Settings → Secrets and variables → Actions** 並新增：
 
 | Secret | 值 |
 |--------|------|
-| `AWS_IAM_ROLE_ARN` | 你的 OIDC Role ARN |
+| `AWS_IAM_ROLE_ARN` | Step 2.2 的 Role ARN |
 | `S3_BUCKET_NAME` | Terraform 輸出值 |
 | `CLOUDFRONT_DISTRIBUTION_ID` | Terraform 輸出值 |
 
-### 步驟三：設定前端
+---
+
+### 階段三：連接前端並上線
+
+#### Step 3.1：設定前端環境
 
 ```bash
 cd app
 cp .env.example .env
-# 編輯 .env，填入 Terraform 輸出的 VITE_API_BASE_URL
 ```
 
-### 步驟四：部署
+編輯 `.env` 並設定 API 基底 URL（不要尾隨斜線，不要加 `/cards`）：
+```
+VITE_API_BASE_URL=https://xxxxx.execute-api.us-east-1.amazonaws.com/v1
+```
+
+React 應用會自動在此 URL 後附加 `/cards`。
+
+#### Step 3.2：本機測試
 
 ```bash
+npm install
+npm run dev
+```
+
+確認連線正常後，使用 `Ctrl+C` 停止。
+
+#### Step 3.3：部署
+
+```bash
+cd ..
 git add .
-git commit -m "Configure deployment"
+git commit -m "feat: configure deployment"
 git push origin main
 ```
 
-GitHub Actions 會自動：
-1. ✅ 建構 React 應用
-2. ✅ 同步至 S3
-3. ✅ 部署 Lambda 函式
-4. ✅ 清除 CloudFront 快取
+#### Step 3.4：觀看魔法發生
 
-你的應用已上線！🎉
+前往 GitHub 的 **Actions** 分頁。工作流程會：
+1. ✅ 建構 React 應用
+2. ✅ 同步靜態檔案至 S3
+3. ✅ 打包並部署 Lambda 函式
+4. ✅ 執行 `terraform apply` 同步基礎設施
+5. ✅ 清除 CloudFront 快取
+
+完成後（綠色勾選），開啟你的 `cloudfront_domain_name` URL — **你的應用已上線！** 🎉
+
+---
+
+### 後續部署
+
+初始設定完成後，每次 `git push origin main` 會自動：
+- 建構並部署前端變更
+- 更新 Lambda 程式碼（如有修改）
+- 保持基礎設施同步
+
+不需要任何手動步驟！
 
 ---
 

@@ -5,9 +5,9 @@
 ### Transform team memories into a constellation of stars
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/erictung1999/echo-tree?style=social)](https://github.com/erictung1999/echo-tree/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/erictung1999/echo-tree)](https://github.com/erictung1999/echo-tree/issues)
+[![GitHub stars](https://img.shields.io/github/stars/ceparadise168/echo-tree?style=social)](https://github.com/ceparadise168/echo-tree/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/ceparadise168/echo-tree?style=social)](https://github.com/ceparadise168/echo-tree/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/ceparadise168/echo-tree)](https://github.com/ceparadise168/echo-tree/issues)
 
 **[English](README.md)** · [繁體中文](README.zh-tw.md) · [日本語](README.ja.md)
 
@@ -92,7 +92,7 @@ Enter the **Konami Code** (↑↑↓↓←→←→BA) to unlock a magical Chris
 Experience the 3D starfield in under 30 seconds:
 
 ```bash
-git clone https://github.com/erictung1999/echo-tree.git
+git clone https://github.com/ceparadise168/echo-tree.git
 cd echo-tree/app
 npm install
 npm run dev
@@ -223,14 +223,40 @@ graph TD
 
 ## 🚢 Deployment
 
+This guide walks you through deploying Echo Tree from scratch, including AWS setup, GitHub Actions configuration, and going live.
+
 ### Prerequisites
 
 - AWS Account with appropriate permissions
 - Terraform >= 1.5.0
 - Node.js >= 22
-- GitHub repository (for CI/CD)
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed and configured
+- GitHub repository (fork this project)
 
-### Step 1: Infrastructure Setup
+---
+
+### Phase 1: Local Environment & Initial Infrastructure
+
+#### Step 1.1: Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/echo-tree.git
+cd echo-tree
+```
+
+#### Step 1.2: Configure AWS CLI
+
+1. Log in to [AWS Console](https://console.aws.amazon.com/) and navigate to **IAM**.
+2. Create a new user (e.g., `echo-tree-local-admin`) with `AdministratorAccess` policy.
+3. Go to the user's **Security credentials** tab and create an Access Key.
+4. Save the `Access key ID` and `Secret access key` immediately.
+5. Run in terminal:
+   ```bash
+   aws configure
+   ```
+   Enter your access key, secret key, and default region (e.g., `us-east-1`).
+
+#### Step 1.3: Deploy Infrastructure with Terraform
 
 ```bash
 cd terraform
@@ -238,41 +264,109 @@ terraform init
 terraform apply
 ```
 
-Save the outputs — you'll need `api_gateway_invoke_url`, `s3_bucket_name`, and `cloudfront_distribution_id`.
+After confirming with `yes`, wait for resources to be created. **Save the outputs**:
+- `cloudfront_domain_name`
+- `s3_bucket_name`
+- `api_gateway_invoke_url`
+- `cloudfront_distribution_id`
 
-### Step 2: Configure GitHub Secrets
+---
 
-In your repo settings, add these secrets:
+### Phase 2: Configure GitHub Actions with AWS (OIDC)
+
+This setup uses OpenID Connect (OIDC) for secure, keyless authentication between GitHub Actions and AWS.
+
+#### Step 2.1: Create OIDC Identity Provider in AWS
+
+1. In IAM, go to **Identity providers** → **Add provider**.
+2. Select `OpenID Connect`.
+3. Enter:
+   - **Provider URL**: `https://token.actions.githubusercontent.com`
+   - **Audience**: `sts.amazonaws.com`
+4. Click **Add provider**.
+
+#### Step 2.2: Create IAM Role for GitHub Actions
+
+1. In IAM, go to **Roles** → **Create role**.
+2. Select **Web identity** as the trusted entity type.
+3. Choose the `token.actions.githubusercontent.com` provider you just created.
+4. For **Audience**, select `sts.amazonaws.com`.
+5. Configure GitHub access:
+   - **Organization**: Your GitHub username
+   - **Repository**: `echo-tree`
+   - **Branch** (recommended): `main`
+6. Click **Next**.
+7. Attach the `AdministratorAccess` policy (or create a more restrictive custom policy).
+8. Name the role (e.g., `github-actions-echo-tree-role`) and create it.
+9. **Copy the Role ARN** — it looks like `arn:aws:iam::123456789012:role/github-actions-echo-tree-role`.
+
+#### Step 2.3: Configure GitHub Secrets
+
+In your GitHub repository, go to **Settings → Secrets and variables → Actions** and add:
 
 | Secret | Value |
 |--------|-------|
-| `AWS_IAM_ROLE_ARN` | Your OIDC role ARN |
+| `AWS_IAM_ROLE_ARN` | The Role ARN from Step 2.2 |
 | `S3_BUCKET_NAME` | From Terraform output |
 | `CLOUDFRONT_DISTRIBUTION_ID` | From Terraform output |
 
-### Step 3: Configure Frontend
+---
+
+### Phase 3: Connect Frontend and Go Live
+
+#### Step 3.1: Configure Frontend Environment
 
 ```bash
 cd app
 cp .env.example .env
-# Edit .env with VITE_API_BASE_URL from Terraform output
 ```
 
-### Step 4: Deploy
+Edit `.env` and set the API base URL (no trailing slash, no `/cards`):
+```
+VITE_API_BASE_URL=https://xxxxx.execute-api.us-east-1.amazonaws.com/v1
+```
+
+The React app automatically appends `/cards` to this URL.
+
+#### Step 3.2: Test Locally
 
 ```bash
+npm install
+npm run dev
+```
+
+Verify the connection works, then stop with `Ctrl+C`.
+
+#### Step 3.3: Deploy
+
+```bash
+cd ..
 git add .
-git commit -m "Configure deployment"
+git commit -m "feat: configure deployment"
 git push origin main
 ```
 
-GitHub Actions will automatically:
-1. ✅ Build the React app
-2. ✅ Sync to S3
-3. ✅ Deploy Lambda function
-4. ✅ Invalidate CloudFront cache
+#### Step 3.4: Watch the Magic
 
-Your app is live! 🎉
+Go to **Actions** tab in GitHub. The workflow will:
+1. ✅ Build the React app
+2. ✅ Sync static files to S3
+3. ✅ Package and deploy Lambda function
+4. ✅ Run `terraform apply` for infrastructure sync
+5. ✅ Invalidate CloudFront cache
+
+Once complete (green checkmark), open your `cloudfront_domain_name` URL — **your app is live!** 🎉
+
+---
+
+### Subsequent Deployments
+
+After initial setup, every `git push origin main` will automatically:
+- Build and deploy frontend changes
+- Update Lambda code if modified
+- Keep infrastructure in sync
+
+No manual steps required!
 
 ---
 
