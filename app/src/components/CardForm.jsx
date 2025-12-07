@@ -153,7 +153,7 @@ export default function CardForm({ onSubmit, onClose }) {
     }
   };
 
-  const remainingChars = 100 - memory.length;
+  const remainingChars = 150 - memory.length;
 
   // 從 HEX 顏色獲取色相值
   const getHueFromColor = (hex) => {
@@ -261,10 +261,10 @@ export default function CardForm({ onSubmit, onClose }) {
           <div className="form-field">
             <textarea
               value={memory}
-              onChange={(e) => setMemory(e.target.value.slice(0, 100))}
+              onChange={(e) => setMemory(e.target.value.slice(0, 150))}
               placeholder="分享一段美好的記憶..."
               rows={4}
-              maxLength={100}
+              maxLength={150}
               autoFocus
               disabled={isSubmitting}
               style={{ borderColor: selectedColor + '40' }}

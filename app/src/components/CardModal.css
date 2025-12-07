@@ -158,6 +158,10 @@
   line-height: 1.6;
   margin-bottom: 20px;
   font-family: var(--font-body);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  max-width: 100%;
 }
 
 .memory-meta {
