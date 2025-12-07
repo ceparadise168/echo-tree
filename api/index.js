@@ -5,6 +5,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const {
   DynamoDBDocumentClient,
   ScanCommand,
+  QueryCommand,
   PutCommand,
 } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
@@ -15,6 +16,16 @@ app.use(express.json());
 const TABLE_NAME = process.env.TABLE_NAME;
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
+
+// Validate eventCode format
+function validateEventCode(eventCode) {
+  if (!eventCode || typeof eventCode !== 'string') {
+    return false;
+  }
+  const trimmed = eventCode.trim();
+  // 3-50 characters, only alphanumeric, underscore, and hyphen
+  return /^[a-zA-Z0-9_-]{3,50}$/.test(trimmed);
+}
 
 // CORS Headers
 app.use((req, res, next) => {
@@ -32,27 +43,54 @@ app.options('/cards', (req, res) => {
   res.status(200).end();
 });
 
-// Get all cards
+// Get cards by eventCode
 app.get('/cards', async (req, res) => {
+  const { eventCode } = req.query;
+
+  if (!eventCode) {
+    return res.status(400).json({ error: 'eventCode parameter is required' });
+  }
+
+  if (!validateEventCode(eventCode)) {
+    return res.status(400).json({ 
+      error: 'Invalid eventCode format. Must be 3-50 characters, only alphanumeric, underscore, and hyphen.' 
+    });
+  }
+
   const params = {
     TableName: TABLE_NAME,
+    IndexName: 'EventCodeIndex',
+    KeyConditionExpression: 'eventCode = :code',
+    ExpressionAttributeValues: {
+      ':code': eventCode,
+    },
   };
 
   try {
-    const data = await docClient.send(new ScanCommand(params));
-    res.status(200).json(data.Items);
+    const data = await docClient.send(new QueryCommand(params));
+    res.status(200).json(data.Items || []);
   } catch (err) {
-    console.error('Error scanning DynamoDB', err);
+    console.error('Error querying DynamoDB', err);
     res.status(500).json({ error: 'Could not retrieve cards' });
   }
 });
 
 // Create a new card
 app.post('/cards', async (req, res) => {
-  const { memory, recipient, authorName, color, date } = req.body;
+  const { memory, recipient, authorName, color, date, eventCode } = req.body;
 
   if (!memory) {
     return res.status(400).json({ error: 'Memory content is required' });
+  }
+
+  if (!eventCode) {
+    return res.status(400).json({ error: 'eventCode is required' });
+  }
+
+  if (!validateEventCode(eventCode)) {
+    return res.status(400).json({ 
+      error: 'Invalid eventCode format. Must be 3-50 characters, only alphanumeric, underscore, and hyphen.' 
+    });
   }
 
   const cardId = uuidv4();
@@ -60,6 +98,7 @@ app.post('/cards', async (req, res) => {
     TableName: TABLE_NAME,
     Item: {
       cardId,
+      eventCode,
       memory,
       recipient: recipient || null,
       authorName: authorName || 'Anonymous',
