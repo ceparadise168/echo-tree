@@ -488,17 +488,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
-  // 返回私人星空（訪客模式）
-  const handleReturnToGuestMode = useCallback(() => {
-    const confirmed = window.confirm(
-      '確定要返回私人星空嗎？\n\n返回後將看到您的本地卡片，群組卡片將不再顯示。'
-    );
-    if (confirmed) {
-      window.history.pushState({}, '', window.location.pathname);
-      setEventCode(null);
-    }
-  }, []);
-
   const [selectedCard, setSelectedCard] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [autoPilotFocusedCard, setAutoPilotFocusedCard] = useState(null);
@@ -515,21 +504,6 @@ export default function App() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   
-  useEffect(() => {
-    // 僅在訪客模式且未顯示過歡迎訊息時顯示
-    if (isGuestMode && !localStorage.getItem('echoTree_welcomed')) {
-      setShowWelcomeModal(true);
-    }
-  }, [isGuestMode]);
-  
-  // 建立群組處理
-  const handleCreateGroup = useCallback((customEventCode) => {
-    window.history.pushState({}, '', `?eventCode=${customEventCode}`);
-    setEventCode(customEventCode);
-    setShowCreateGroupModal(false);
-    showToast(`已加入群組：${customEventCode}`, 'success');
-  }, [showToast]);
-  
   // Toast 通知系統
   const [toastState, setToastState] = useState({
     visible: false,
@@ -544,6 +518,32 @@ export default function App() {
       setToastState(prev => ({ ...prev, visible: false }));
     }, duration);
   }, []);
+  
+  useEffect(() => {
+    // 僅在訪客模式且未顯示過歡迎訊息時顯示
+    if (isGuestMode && !localStorage.getItem('echoTree_welcomed')) {
+      setShowWelcomeModal(true);
+    }
+  }, [isGuestMode]);
+  
+  // 返回私人星空（訪客模式）
+  const handleReturnToGuestMode = useCallback(() => {
+    const confirmed = window.confirm(
+      '確定要返回私人星空嗎？\n\n返回後將看到您的本地卡片，群組卡片將不再顯示。'
+    );
+    if (confirmed) {
+      window.history.pushState({}, '', window.location.pathname);
+      setEventCode(null);
+    }
+  }, []);
+  
+  // 建立群組處理
+  const handleCreateGroup = useCallback((customEventCode) => {
+    window.history.pushState({}, '', `?eventCode=${customEventCode}`);
+    setEventCode(customEventCode);
+    setShowCreateGroupModal(false);
+    showToast(`已加入群組：${customEventCode}`, 'success');
+  }, [showToast]);
 
   const [userCards, setUserCards] = useState(() => {
     // 根據模式使用不同的 localStorage key
